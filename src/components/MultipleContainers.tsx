@@ -489,17 +489,6 @@ export function MultipleContainers({
             </SortableContext>
           </DroppableContainer>
         ))}
-        {minimal ? undefined : (
-          <DroppableContainer
-            id={PLACEHOLDER_ID}
-            disabled={isSortingContainer}
-            items={empty}
-            onClick={handleAddColumn}
-            placeholder
-          >
-            + Add column
-          </DroppableContainer>
-        )}
       </div>
       <DragOverlay adjustScale={adjustScale} dropAnimation={dropAnimation}>
         {activeId
