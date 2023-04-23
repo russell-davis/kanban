@@ -5,6 +5,7 @@ import {
 } from "~/server/api/trpc";
 import { exampleRouter } from "~/server/api/routers/example";
 import { z } from "zod";
+import { isSameDay, startOfDay } from "date-fns";
 
 /**
  * This is the primary router for your server.
@@ -14,6 +15,32 @@ import { z } from "zod";
 export const appRouter = createTRPCRouter({
   example: exampleRouter,
   kanban: createTRPCRouter({
+    seed: publicProcedure.mutation(async ({ ctx }) => {
+      // reset db
+      await ctx.prisma.task.deleteMany();
+
+      // create tasks
+      const dummyTasksPromises = [];
+      const d = startOfDay(new Date());
+      for (let i = 0; i < 10; i++) {
+        dummyTasksPromises.push(
+          ctx.prisma.task.create({
+            data: {
+              title: `Task ${i + 1}`,
+              date: d,
+              completed: false,
+              position: i,
+            },
+          })
+        );
+      }
+
+      const results = await Promise.all(dummyTasksPromises);
+      console.info("results", results);
+
+      return results;
+    }),
+
     tasks: publicProcedure
       .input(
         z.object({
@@ -23,17 +50,31 @@ export const appRouter = createTRPCRouter({
           endAt: z.date(),
         })
       )
-      .query(({ input }) => {
-        console.info("input", input);
+      .query(async ({ input, ctx }) => {
         // get the days in the range
-        const days = getDateList(input.startAt, input.endAt).map((date) => {
+        const days = getDateList(input.startAt, input.endAt);
+
+        const tasks = await ctx.prisma.task.findMany({
+          where: {
+            date: {
+              gte: input.startAt,
+              lte: input.endAt,
+            },
+          },
+          orderBy: {
+            position: "asc",
+          },
+        });
+        console.info("tasks", tasks.length);
+
+        const tasksByDate = days.map((date) => {
           return {
             date,
-            tasks: [],
+            tasks: tasks.filter((task) => isSameDay(task.date, date)),
           };
         });
 
-        return days;
+        return tasksByDate;
       }),
   }),
 });
