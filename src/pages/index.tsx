@@ -1,11 +1,8 @@
 import { type NextPage } from "next";
 import Head from "next/head";
-import Link from "next/link";
-import { signIn, signOut, useSession } from "next-auth/react";
 import { addDays, endOfDay, isSameDay, startOfDay, subDays } from "date-fns";
-import { CSS } from "@dnd-kit/utilities";
 import { api } from "~/utils/api";
-import { FC, useState } from "react";
+import { useState } from "react";
 import {
   closestCenter,
   DndContext,
@@ -18,26 +15,17 @@ import {
   MeasuringStrategy,
   MouseSensor,
   TouchSensor,
-  useDraggable,
-  useDroppable,
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
 import {
   SortableContext,
-  useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import {
-  ActionIcon,
-  Button,
-  CheckIcon,
-  Group,
-  Text,
-  TextInput,
-} from "@mantine/core";
+import { ActionIcon, Button, CheckIcon, Text, TextInput } from "@mantine/core";
 import { coordinateGetter } from "~/components/dndkit/multipleContainersKeyboardCoordinates";
-import { Task } from "@prisma/client";
+import { Sortable } from "~/components/Sortable";
+import { DayColumn } from "~/components/DayColumn";
 
 const Home: NextPage = () => {
   const [startAt, setStartAt] = useState(subDays(startOfDay(new Date()), 3));
@@ -48,6 +36,7 @@ const Home: NextPage = () => {
   const createTaskMutation = api.kanban.create.useMutation();
   const updatePositionMutation = api.kanban.updatePosition.useMutation();
   const backlogTasksQuery = api.kanban.backlogTasks.useQuery();
+
   const tasksByDateQuery = api.kanban.tasks.useQuery(
     {
       startAt: startAt,
@@ -70,7 +59,11 @@ const Home: NextPage = () => {
   } | null>(null);
   const [clonedItems, setClonedItems] = useState<any>([]);
   const sensors = useSensors(
-    useSensor(MouseSensor),
+    useSensor(MouseSensor, {
+      activationConstraint: {
+        distance: 10,
+      },
+    }),
     useSensor(TouchSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter,
@@ -163,42 +156,7 @@ const Home: NextPage = () => {
               </div>
               <div className="flex w-full overflow-x-scroll">
                 {tasksByDateQuery.data?.map((dt) => (
-                  <div
-                    key={dt.date.toISOString()}
-                    className="day_column flex h-full min-w-[300px] flex-1 bg-gray-800"
-                  >
-                    <div className="task_list flex w-full flex-col space-y-2 p-1">
-                      <Text size={"md"} weight={500} color={"white"}>
-                        {dt.date.toLocaleDateString()}
-                      </Text>
-                      <SortableContext
-                        items={dt.tasks}
-                        id={dt.date.toISOString()}
-                        key={dt.date.toISOString()}
-                        strategy={verticalListSortingStrategy}
-                      >
-                        {dt.tasks.map((task) => (
-                          <Sortable id={task.id} key={task.id} data={task}>
-                            <div
-                              className="min-h-24 w-full flex-1 rounded-lg bg-gray-200 p-1"
-                              key={task.id}
-                            >
-                              <Text size={"sm"} weight={500}>
-                                {task.title}
-                              </Text>
-                            </div>
-                          </Sortable>
-                        ))}
-                        {dt.tasks.length === 0 && (
-                          <div className="flex h-full w-full grow rounded-lg">
-                            <Sortable id={dt.date.toISOString()} data={{}}>
-                              {" "}
-                            </Sortable>
-                          </div>
-                        )}
-                      </SortableContext>
-                    </div>
-                  </div>
+                  <DayColumn key={dt.date.toISOString()} dt={dt} />
                 ))}
               </div>
             </div>
@@ -413,26 +371,3 @@ const Home: NextPage = () => {
 };
 
 export default Home;
-
-const Sortable: FC<{ id: string; children: any; data: any }> = ({
-  children,
-  id,
-  data,
-}) => {
-  const { attributes, listeners, setNodeRef, transform, transition } =
-    useSortable({
-      id: id,
-      data: data,
-    });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
-  return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      {children}
-    </div>
-  );
-};

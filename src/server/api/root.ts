@@ -40,7 +40,6 @@ export const appRouter = createTRPCRouter({
 
       return results;
     }),
-
     tasks: publicProcedure
       .input(
         z.object({
@@ -131,6 +130,28 @@ export const appRouter = createTRPCRouter({
             position: input.position,
           },
         });
+      }),
+    deleteTask: publicProcedure
+      .input(
+        z.object({
+          taskId: z.string(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        return ctx.prisma.task
+          .delete({
+            where: {
+              id: input.taskId,
+            },
+          })
+          .then((t) => {
+            console.info("deleted task", t);
+            return t;
+          })
+          .catch((e) => {
+            console.error("error deleting task", e);
+            throw e;
+          });
       }),
   }),
 });
