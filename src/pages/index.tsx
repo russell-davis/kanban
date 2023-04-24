@@ -30,7 +30,6 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { Button } from "@mantine/core";
-import { MultipleContainers } from "~/components/MultipleContainers";
 import { coordinateGetter } from "~/components/dndkit/multipleContainersKeyboardCoordinates";
 import { Task } from "@prisma/client";
 
@@ -53,9 +52,10 @@ const Home: NextPage = () => {
     return task;
   };
 
-  const [activeDragItem, setActiveDragItem] = useState<{ id: string } | null>(
-    null
-  );
+  const [activeDragItem, setActiveDragItem] = useState<{
+    id: string;
+    title: string;
+  } | null>(null);
   const [clonedItems, setClonedItems] = useState<any>([]);
   const sensors = useSensors(
     useSensor(MouseSensor),
@@ -116,7 +116,7 @@ const Home: NextPage = () => {
                       strategy={verticalListSortingStrategy}
                     >
                       {dt.tasks.map((task) => (
-                        <Sortable id={task.id} key={task.id}>
+                        <Sortable id={task.id} key={task.id} data={task}>
                           <div
                             className="min-h-24 w-full flex-1 rounded-lg bg-white "
                             key={task.id}
@@ -128,7 +128,7 @@ const Home: NextPage = () => {
                       ))}
                       {dt.tasks.length === 0 && (
                         <div className="flex h-full w-full grow rounded-lg bg-white ">
-                          <Sortable id={dt.date.toISOString()}>
+                          <Sortable id={dt.date.toISOString()} data={{}}>
                             <p>no tasks</p>
                           </Sortable>
                         </div>
@@ -139,22 +139,32 @@ const Home: NextPage = () => {
               ))}
             </div>
             <DragOverlay>
-              {activeDragItem ? <div>dragged item</div> : null}
+              {activeDragItem ? (
+                <div
+                  className="min-h-24 w-full flex-1 rounded-lg bg-gray-200"
+                  key={activeDragItem.id}
+                >
+                  <p>{activeDragItem.title}</p>
+                </div>
+              ) : null}
             </DragOverlay>
           </DndContext>
         </div>
-
-        <MultipleContainers />
       </main>
     </>
   );
 
   function onDragStart(event: DragStartEvent) {
     console.info("start");
-    setActiveDragItem({ id: event.active.id as string });
+    setActiveDragItem({
+      id: event.active.id as string,
+      title: event.active.data.current?.title,
+    });
   }
   function onDragOver(event: DragOverEvent) {
-    setActiveDragItem({ id: event.active.id as string });
+    const item = getItemById(event.active.id as string);
+    if (!item) return;
+    setActiveDragItem({ id: event.active.id as string, title: item?.title });
     console.info("over", {
       direction: event.delta.y > 0 ? "down" : "up",
       activeindex: event.active.data.current?.sortable.index,
@@ -316,10 +326,15 @@ const Home: NextPage = () => {
 
 export default Home;
 
-const Sortable: FC<{ id: string; children: any }> = ({ children, id }) => {
+const Sortable: FC<{ id: string; children: any; data: any }> = ({
+  children,
+  id,
+  data,
+}) => {
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({
       id: id,
+      data: data,
     });
 
   const style = {
