@@ -76,6 +76,62 @@ export const appRouter = createTRPCRouter({
 
         return tasksByDate;
       }),
+    backlogTasks: publicProcedure.query(async ({ ctx }) => {
+      const tasks = await ctx.prisma.task.findMany({
+        where: {
+          date: new Date(0),
+        },
+        orderBy: {
+          position: "asc",
+        },
+      });
+      console.info("tasks", tasks);
+
+      return tasks;
+    }),
+    create: publicProcedure
+      .input(
+        z.object({
+          title: z.string(),
+          date: z.date(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        const maxTaskPosition = await ctx.prisma.task.findFirst({
+          orderBy: {
+            position: "desc",
+          },
+        });
+        const task = await ctx.prisma.task.create({
+          data: {
+            title: input.title,
+            date: input.date,
+            position: maxTaskPosition ? maxTaskPosition.position + 1 : 0,
+          },
+        });
+        console.info("created task", task);
+
+        return task;
+      }),
+    updatePosition: publicProcedure
+      .input(
+        z.object({
+          taskId: z.string(),
+          date: z.date(),
+          position: z.number(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        return ctx.prisma.task.update({
+          where: {
+            id: input.taskId,
+          },
+          data: {
+            date: input.date,
+            position: input.position,
+          },
+        });
+      }),
   }),
 });
 

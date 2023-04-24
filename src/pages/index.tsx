@@ -4,7 +4,6 @@ import Link from "next/link";
 import { signIn, signOut, useSession } from "next-auth/react";
 import { addDays, endOfDay, isSameDay, startOfDay, subDays } from "date-fns";
 import { CSS } from "@dnd-kit/utilities";
-
 import { api } from "~/utils/api";
 import { FC, useState } from "react";
 import {
@@ -29,7 +28,14 @@ import {
   useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { Button } from "@mantine/core";
+import {
+  ActionIcon,
+  Button,
+  CheckIcon,
+  Group,
+  Text,
+  TextInput,
+} from "@mantine/core";
 import { coordinateGetter } from "~/components/dndkit/multipleContainersKeyboardCoordinates";
 import { Task } from "@prisma/client";
 
@@ -38,6 +44,10 @@ const Home: NextPage = () => {
   const [endAt, setEndAt] = useState(addDays(endOfDay(new Date()), 7));
   const utils = api.useContext();
   const seedDb = api.kanban.seed.useMutation();
+  const [newTaskTitle, setNewTaskTitle] = useState("");
+  const createTaskMutation = api.kanban.create.useMutation();
+  const updatePositionMutation = api.kanban.updatePosition.useMutation();
+  const backlogTasksQuery = api.kanban.backlogTasks.useQuery();
   const tasksByDateQuery = api.kanban.tasks.useQuery(
     {
       startAt: startAt,
@@ -46,7 +56,9 @@ const Home: NextPage = () => {
     { refetchOnWindowFocus: false, refetchOnMount: false }
   );
   const getItemById = (id: string) => {
-    const task = tasksByDateQuery.data
+    let task = backlogTasksQuery.data?.find((t) => t.id === id);
+    if (task) return task;
+    task = tasksByDateQuery.data
       ?.flatMap((dt) => dt.tasks)
       .find((t) => t.id === id);
     return task;
@@ -70,21 +82,8 @@ const Home: NextPage = () => {
       <Head>
         <title>Kanban!</title>
       </Head>
-      <main className="flex h-screen flex-col bg-cyan-700">
-        <div className="flex flex-col px-12 py-12">
-          {tasksByDateQuery.status}
-          {/*<Button*/}
-          {/*  compact*/}
-          {/*  onClick={async () => {*/}
-          {/*    await seedDb.mutateAsync().then(() => {*/}
-          {/*      tasksByDateQuery.refetch();*/}
-          {/*    });*/}
-          {/*  }}*/}
-          {/*>*/}
-          {/*  seed*/}
-          {/*</Button>*/}
-        </div>
-        <div className="py-18 px-12">
+      <main className="flex h-screen flex-col bg-gray-900">
+        <div className="py-18 flex flex-1">
           <DndContext
             onDragStart={onDragStart}
             onDragOver={onDragOver}
@@ -100,48 +99,113 @@ const Home: NextPage = () => {
           >
             <div
               id="task-list"
-              className="flex flex-row space-x-2 overflow-x-scroll rounded-lg p-2"
+              className="flex flex-row space-x-2 overflow-x-hidden rounded-lg px-2 py-2"
             >
-              {tasksByDateQuery.data?.map((dt) => (
-                <div
-                  key={dt.date.toISOString()}
-                  className="day_column h-96 min-h-[50px] min-w-[300px] flex-1 bg-orange-400"
-                >
-                  <div className="task_list flex h-full flex-1 flex-col space-y-2 p-1">
-                    <div>day: {dt.date.toLocaleDateString()}</div>
-                    <SortableContext
-                      items={dt.tasks}
-                      id={dt.date.toISOString()}
-                      key={dt.date.toISOString()}
-                      strategy={verticalListSortingStrategy}
-                    >
-                      {dt.tasks.map((task) => (
-                        <Sortable id={task.id} key={task.id} data={task}>
-                          <div
-                            className="min-h-24 w-full flex-1 rounded-lg bg-white "
-                            key={task.id}
-                          >
-                            <p>{task.title}</p>
-                            <p>{task.position}</p>
-                          </div>
-                        </Sortable>
-                      ))}
-                      {dt.tasks.length === 0 && (
-                        <div className="flex h-full w-full grow rounded-lg bg-white ">
-                          <Sortable id={dt.date.toISOString()} data={{}}>
-                            <p>no tasks</p>
-                          </Sortable>
-                        </div>
-                      )}
-                    </SortableContext>
-                  </div>
+              <div className="min-w-[300px] bg-gray-800">
+                <div className="flex grow flex-row justify-between p-2">
+                  <Text size={"lg"} weight={500} color={"white"}>
+                    Backlog
+                  </Text>
+
+                  <Button variant={"subtle"} compact>
+                    New
+                  </Button>
                 </div>
-              ))}
+                <div className="flex grow flex-row justify-between space-x-2 p-2">
+                  <TextInput
+                    placeholder={"New task"}
+                    classNames={{
+                      root: "flex-grow",
+                    }}
+                    value={newTaskTitle}
+                    onChange={(e) => setNewTaskTitle(e.currentTarget.value)}
+                  />
+                  <ActionIcon
+                    loading={createTaskMutation.isLoading}
+                    onClick={() => {
+                      createTaskMutation.mutate(
+                        {
+                          title: newTaskTitle,
+                          date: new Date(0),
+                        },
+                        {
+                          onSuccess: () => {
+                            backlogTasksQuery.refetch();
+                            setNewTaskTitle("");
+                          },
+                        }
+                      );
+                    }}
+                  >
+                    <CheckIcon color={"green"} height={14} />
+                  </ActionIcon>
+                </div>
+                <div className="flex grow flex-col space-y-2 p-2">
+                  <SortableContext
+                    items={backlogTasksQuery.data ?? []}
+                    id={new Date(0).toISOString()}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    {backlogTasksQuery.data?.map((task) => (
+                      <Sortable id={task.id} key={task.id} data={task}>
+                        <div
+                          className="w-full flex-1 rounded-lg bg-gray-200 p-1"
+                          key={task.id}
+                        >
+                          <Text size={"sm"} weight={500}>
+                            {task.title}
+                          </Text>
+                        </div>
+                      </Sortable>
+                    ))}
+                  </SortableContext>
+                </div>
+              </div>
+              <div className="flex w-full overflow-x-scroll">
+                {tasksByDateQuery.data?.map((dt) => (
+                  <div
+                    key={dt.date.toISOString()}
+                    className="day_column flex h-full min-w-[300px] flex-1 bg-gray-800"
+                  >
+                    <div className="task_list flex w-full flex-col space-y-2 p-1">
+                      <Text size={"md"} weight={500} color={"white"}>
+                        {dt.date.toLocaleDateString()}
+                      </Text>
+                      <SortableContext
+                        items={dt.tasks}
+                        id={dt.date.toISOString()}
+                        key={dt.date.toISOString()}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        {dt.tasks.map((task) => (
+                          <Sortable id={task.id} key={task.id} data={task}>
+                            <div
+                              className="min-h-24 w-full flex-1 rounded-lg bg-gray-200 p-1"
+                              key={task.id}
+                            >
+                              <Text size={"sm"} weight={500}>
+                                {task.title}
+                              </Text>
+                            </div>
+                          </Sortable>
+                        ))}
+                        {dt.tasks.length === 0 && (
+                          <div className="flex h-full w-full grow rounded-lg">
+                            <Sortable id={dt.date.toISOString()} data={{}}>
+                              {" "}
+                            </Sortable>
+                          </div>
+                        )}
+                      </SortableContext>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
             <DragOverlay>
               {activeDragItem ? (
                 <div
-                  className="min-h-24 w-full flex-1 rounded-lg bg-gray-200"
+                  className="min-h-96 w-full flex-1 rounded-lg bg-gray-200"
                   key={activeDragItem.id}
                 >
                   <p>{activeDragItem.title}</p>
@@ -258,63 +322,87 @@ const Home: NextPage = () => {
     console.info("new position", newPosition);
 
     // update the position of the dragged item
-    utils.kanban.tasks.setData(
-      {
-        startAt,
-        endAt,
-      },
-      (prev) => {
-        if (!prev) {
-          return prev;
-        }
+    updatePositionMutation
+      .mutateAsync({
+        taskId: active.id,
+        date: overColumnDate,
+        position: newPosition,
+      })
+      .then((res) => {
+        console.info("updatePositionMutation", res);
+        backlogTasksQuery.refetch();
+        tasksByDateQuery.refetch();
+      })
+      .catch((err) => {
+        console.error("ERR updatePositionMutation", err);
+        backlogTasksQuery.refetch();
+        tasksByDateQuery.refetch();
+      });
+    // utils.kanban.tasks.setData(
+    //   {
+    //     startAt,
+    //     endAt,
+    //   },
+    //   (prev) => {
+    //     if (!prev) {
+    //       return prev;
+    //     }
+    //
+    //     if (sameColumn) {
+    //       return prev.map((dt) => {
+    //         if (isSameDay(dt.date, active.date)) {
+    //           return {
+    //             ...dt,
+    //             tasks: dt.tasks
+    //               .map((task) => {
+    //                 if (task.id === active.id) {
+    //                   return {
+    //                     ...task,
+    //                     position: newPosition,
+    //                     date: sameColumn ? task.date : overColumnDate,
+    //                   };
+    //                 }
+    //                 return task;
+    //               })
+    //               .sort((a, b) => a.position - b.position),
+    //           };
+    //         }
+    //         return dt;
+    //       });
+    //     } else {
+    //       return prev.map((dt) => {
+    //         if (isSameDay(dt.date, active.date)) {
+    //           return {
+    //             ...dt,
+    //             tasks: dt.tasks.filter((task) => task.id !== active.id),
+    //           };
+    //         }
+    //         if (isSameDay(dt.date, overColumnDate)) {
+    //           return {
+    //             ...dt,
+    //             tasks: [
+    //               ...dt.tasks,
+    //               {
+    //                 ...(active.item as any),
+    //                 position: newPosition,
+    //                 date: overColumnDate,
+    //               },
+    //             ].sort((a, b) => a.position - b.position),
+    //           };
+    //         }
+    //         return dt;
+    //       });
+    //     }
+    //   }
+    // );
 
-        if (sameColumn) {
-          return prev.map((dt) => {
-            if (isSameDay(dt.date, active.date)) {
-              return {
-                ...dt,
-                tasks: dt.tasks
-                  .map((task) => {
-                    if (task.id === active.id) {
-                      return {
-                        ...task,
-                        position: newPosition,
-                        date: sameColumn ? task.date : overColumnDate,
-                      };
-                    }
-                    return task;
-                  })
-                  .sort((a, b) => a.position - b.position),
-              };
-            }
-            return dt;
-          });
-        } else {
-          return prev.map((dt) => {
-            if (isSameDay(dt.date, active.date)) {
-              return {
-                ...dt,
-                tasks: dt.tasks.filter((task) => task.id !== active.id),
-              };
-            }
-            if (isSameDay(dt.date, overColumnDate)) {
-              return {
-                ...dt,
-                tasks: [
-                  ...dt.tasks,
-                  {
-                    ...(active.item as any),
-                    position: newPosition,
-                    date: overColumnDate,
-                  },
-                ].sort((a, b) => a.position - b.position),
-              };
-            }
-            return dt;
-          });
-        }
-      }
-    );
+    // if the item came from the backlog, refresh the backlog list
+    if (
+      event.active.data.current?.sortable.containerId ===
+      new Date(0).toISOString()
+    ) {
+      backlogTasksQuery.refetch();
+    }
 
     setActiveDragItem(null);
   }
@@ -347,11 +435,4 @@ const Sortable: FC<{ id: string; children: any; data: any }> = ({
       {children}
     </div>
   );
-};
-
-const EmptyDroppable: FC<{ id: string }> = ({ id }) => {
-  const { setNodeRef, isOver } = useDroppable({
-    id: id,
-  });
-  return <div ref={setNodeRef}></div>;
 };
