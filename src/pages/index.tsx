@@ -2,7 +2,7 @@ import { type NextPage } from "next";
 import Head from "next/head";
 import { addDays, endOfDay, isSameDay, startOfDay, subDays } from "date-fns";
 import { api } from "~/utils/api";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   closestCenter,
   DndContext,
@@ -26,6 +26,8 @@ import { ActionIcon, Button, CheckIcon, Text, TextInput } from "@mantine/core";
 import { coordinateGetter } from "~/components/dndkit/multipleContainersKeyboardCoordinates";
 import { Sortable } from "~/components/Sortable";
 import { DayColumn } from "~/components/DayColumn";
+import { IconCheck } from "@tabler/icons-react";
+import { TaskItem } from "~/components/TaskItem";
 
 const Home: NextPage = () => {
   const [startAt, setStartAt] = useState(subDays(startOfDay(new Date()), 3));
@@ -70,6 +72,32 @@ const Home: NextPage = () => {
     })
   );
 
+  const [initialScroll, setInitialScroll] = useState(false);
+  useEffect(() => {
+    if (
+      !!tasksByDateQuery.data &&
+      tasksByDateQuery.data.length > 0 &&
+      !initialScroll
+    ) {
+      // find today's column
+      const todayColumn = tasksByDateQuery.data.find((dt) =>
+        isSameDay(dt.date, new Date())
+      );
+      if (todayColumn) {
+        console.info("scrolling to today's column");
+        // scroll to today's column
+        const element = document.querySelector(".is_today_column");
+        if (element) {
+          element.scrollIntoView({
+            behavior: "smooth",
+            inline: "start",
+          });
+          setInitialScroll(true);
+        }
+      }
+    }
+  }, [tasksByDateQuery.data, initialScroll]);
+
   return (
     <>
       <Head>
@@ -99,12 +127,8 @@ const Home: NextPage = () => {
                   <Text size={"lg"} weight={500} color={"white"}>
                     Backlog
                   </Text>
-
-                  <Button variant={"subtle"} compact>
-                    New
-                  </Button>
                 </div>
-                <div className="flex grow flex-row justify-between space-x-2 p-2">
+                <div className="flex grow flex-row items-center justify-between space-x-2 p-2">
                   <TextInput
                     placeholder={"New task"}
                     classNames={{
@@ -116,6 +140,7 @@ const Home: NextPage = () => {
                   <ActionIcon
                     loading={createTaskMutation.isLoading}
                     onClick={() => {
+                      if (newTaskTitle.length === 0) return;
                       createTaskMutation.mutate(
                         {
                           title: newTaskTitle,
@@ -130,7 +155,7 @@ const Home: NextPage = () => {
                       );
                     }}
                   >
-                    <CheckIcon color={"green"} height={14} />
+                    <IconCheck color={"green"} />
                   </ActionIcon>
                 </div>
                 <div className="flex grow flex-col space-y-2 p-2">
@@ -141,14 +166,7 @@ const Home: NextPage = () => {
                   >
                     {backlogTasksQuery.data?.map((task) => (
                       <Sortable id={task.id} key={task.id} data={task}>
-                        <div
-                          className="w-full flex-1 rounded-lg bg-gray-200 p-1"
-                          key={task.id}
-                        >
-                          <Text size={"sm"} weight={500}>
-                            {task.title}
-                          </Text>
-                        </div>
+                        <TaskItem key={task.id} task={task} />
                       </Sortable>
                     ))}
                   </SortableContext>
@@ -163,7 +181,7 @@ const Home: NextPage = () => {
             <DragOverlay>
               {activeDragItem ? (
                 <div
-                  className="min-h-96 w-full flex-1 rounded-lg bg-gray-200"
+                  className="min-h-96 w-full grow rounded-lg bg-gray-200"
                   key={activeDragItem.id}
                 >
                   <p>{activeDragItem.title}</p>
