@@ -97,10 +97,10 @@ const Home: NextPage = () => {
       if (!event.target) return;
       const percent = calculateHorizontalScrollPercent(event.target);
       if (percent < 10 || percent > 90) {
-        console.info({
-          percent,
-          initialScroll: scrolledToInitialPosition,
-        });
+        // console.info({
+        //   percent,
+        //   initialScroll: scrolledToInitialPosition,
+        // });
       }
       // // if percent < 0.1, fetch previous week
       // if (percent < 0.1) {
@@ -157,10 +157,10 @@ const Home: NextPage = () => {
       </Head>
       <main className="flex h-screen flex-col bg-gray-900">
         <div className="flex flex-col-reverse px-2 text-white">
-          <Text>
-            Scroll position x: {scroll.x}, y: {scroll.y} percent:{" "}
-            {scroll.percent}
-          </Text>
+          {/*<Text>*/}
+          {/*  Scroll position x: {scroll.x}, y: {scroll.y} percent:{" "}*/}
+          {/*  {scroll.percent}*/}
+          {/*</Text>*/}
         </div>
         <div className="py-18 flex flex-1">
           <DndContext
