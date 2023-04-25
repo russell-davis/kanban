@@ -15,10 +15,18 @@ export const TaskItem = (props: {
   const deleteTaskMutation = api.kanban.deleteTask.useMutation();
 
   return (
-    <div className="min-h-24 flex w-full flex-1 justify-between rounded-lg bg-gray-200 p-1">
-      <Text size={"sm"} weight={500}>
-        {props.task.title}
-      </Text>
+    <div className="min-h-24 flex w-full flex-1 items-center justify-between rounded-lg bg-gray-200 p-1">
+      <div className="flex flex-1 flex-row items-center space-x-2">
+        <ActionIcon
+          color={props.task.completed ? "green" : "gray"}
+          className=""
+        >
+          <IconCircleCheckFilled size={28} />
+        </ActionIcon>
+        <Text size={"sm"} weight={500}>
+          {props.task.title}
+        </Text>
+      </div>
       <div className="flex flex-row">
         <ActionIcon
           onClick={(e) => {
