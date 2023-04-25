@@ -180,7 +180,7 @@ const Home: NextPage = () => {
               id="task-list"
               className="flex flex-row space-x-2 overflow-x-hidden rounded-lg px-2 py-2"
             >
-              <div className="min-w-[300px] bg-gray-800">
+              <div className="BACKLOG min-w-[300px] bg-gray-800">
                 <div className="flex grow flex-row justify-between p-2">
                   <Text size={"lg"} weight={500} color={"white"}>
                     Backlog
@@ -232,7 +232,7 @@ const Home: NextPage = () => {
               </div>
               <div
                 ref={scrollableRef}
-                className="flex w-full overflow-x-scroll"
+                className="DATE_TASKS flex w-full overflow-x-scroll"
               >
                 {tasksByDateQuery.data?.map((dt) => (
                   <DayColumn key={dt.date.toISOString()} dt={dt} />
