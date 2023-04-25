@@ -22,7 +22,14 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { ActionIcon, Button, CheckIcon, Text, TextInput } from "@mantine/core";
+import {
+  ActionIcon,
+  Button,
+  CheckIcon,
+  LoadingOverlay,
+  Text,
+  TextInput,
+} from "@mantine/core";
 import { coordinateGetter } from "~/components/dndkit/multipleContainersKeyboardCoordinates";
 import { Sortable } from "~/components/Sortable";
 import { DayColumn } from "~/components/DayColumn";
@@ -75,6 +82,8 @@ const Home: NextPage = () => {
   const [scroll, setScroll] = useState({ x: 0, y: 0, percent: "0" });
   const scrollableRef = useRef<any>(null);
 
+  const [scrolledToInitialPosition, setScrolledToInitialPosition] =
+    useState(false);
   useEffect(() => {
     function calculateHorizontalScrollPercent(element: any) {
       const { scrollWidth, clientWidth, scrollLeft } = element;
@@ -87,8 +96,22 @@ const Home: NextPage = () => {
     const handleScroll = (event: any) => {
       if (!event.target) return;
       const percent = calculateHorizontalScrollPercent(event.target);
-      // if percent < 0.1, fetch previous week
-      // if percent > 0.9, fetch next week
+      if (percent < 10 || percent > 90) {
+        console.info({
+          percent,
+          initialScroll: scrolledToInitialPosition,
+        });
+      }
+      // // if percent < 0.1, fetch previous week
+      // if (percent < 0.1) {
+      //   setStartAt(subDays(startAt, 7));
+      //   return;
+      // }
+      // // if percent > 0.9, fetch next week
+      // if (percent > 0.9) {
+      //   setStartAt(addDays(startAt, 7));
+      //   return;
+      // }
     };
 
     const myElement = scrollableRef.current;
@@ -101,13 +124,12 @@ const Home: NextPage = () => {
         myElement.removeEventListener("scroll", handleScroll);
       }
     };
-  }, [scrollableRef]);
-  const [initialScroll, setInitialScroll] = useState(false);
+  }, [scrollableRef, scrolledToInitialPosition]);
   useEffect(() => {
     if (
       !!tasksByDateQuery.data &&
       tasksByDateQuery.data.length > 0 &&
-      !initialScroll
+      !scrolledToInitialPosition
     ) {
       // find today's column
       const todayColumn = tasksByDateQuery.data.find((dt) =>
@@ -122,11 +144,11 @@ const Home: NextPage = () => {
             behavior: "smooth",
             inline: "start",
           });
-          setInitialScroll(true);
+          setScrolledToInitialPosition(true);
         }
       }
     }
-  }, [tasksByDateQuery.data, initialScroll]);
+  }, [tasksByDateQuery.data, scrolledToInitialPosition]);
 
   return (
     <>

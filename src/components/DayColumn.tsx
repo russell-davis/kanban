@@ -18,7 +18,7 @@ export const DayColumn = (props: {
         isToday ? "is_today_column" : ""
       }`}
     >
-      <div className="task_list flex w-full flex-col space-y-2 p-1">
+      <div className="task_list flex w-full flex-col space-y-3 p-1">
         <div
           className={`${
             isToday ? "rounded border border-white  pl-2" : ""
@@ -35,20 +35,18 @@ export const DayColumn = (props: {
           id={props.dt.date.toISOString()}
           strategy={verticalListSortingStrategy}
         >
-          {props.dt.tasks.map((task) => (
-            <div className="h-full w-full grow rounded-lg bg-gray-700 p-2">
-              <Sortable id={task.id} key={task.id} data={task}>
+          <div className="flex h-full shrink flex-col space-y-2 rounded-lg bg-gray-700 p-2">
+            {props.dt.tasks.map((task) => (
+              <Sortable id={task.id} data={task} key={task.id}>
                 <TaskItem key={task.id} task={task} />
               </Sortable>
-            </div>
-          ))}
-          {props.dt.tasks.length === 0 && (
-            <div className="flex h-full w-full grow rounded-lg bg-gray-700">
+            ))}
+            {props.dt.tasks.length === 0 && (
               <Sortable id={props.dt.date.toISOString()} data={{}}>
                 {" "}
               </Sortable>
-            </div>
-          )}
+            )}
+          </div>
         </SortableContext>
       </div>
     </div>
