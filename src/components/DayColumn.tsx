@@ -14,10 +14,9 @@ export const DayColumn = (props: {
   const isToday = isSameDay(props.dt.date, new Date());
   return (
     <div
-      className={`day_column ${
+      className={`day_column flex h-full min-w-[300px] flex-1 bg-gray-800 p-2 ${
         isToday ? "is_today_column" : ""
-      } flex h-full min-w-[300px] flex-1 bg-gray-800
-      p-2`}
+      }`}
     >
       <div className="task_list flex w-full flex-col space-y-2 p-1">
         <div

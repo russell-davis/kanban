@@ -2,7 +2,7 @@ import { type NextPage } from "next";
 import Head from "next/head";
 import { addDays, endOfDay, isSameDay, startOfDay, subDays } from "date-fns";
 import { api } from "~/utils/api";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   closestCenter,
   DndContext,
@@ -28,6 +28,7 @@ import { Sortable } from "~/components/Sortable";
 import { DayColumn } from "~/components/DayColumn";
 import { IconCheck } from "@tabler/icons-react";
 import { TaskItem } from "~/components/TaskItem";
+import { useWindowScroll } from "@mantine/hooks";
 
 const Home: NextPage = () => {
   const [startAt, setStartAt] = useState(subDays(startOfDay(new Date()), 3));
@@ -71,7 +72,36 @@ const Home: NextPage = () => {
       coordinateGetter,
     })
   );
+  const [scroll, setScroll] = useState({ x: 0, y: 0, percent: "0" });
+  const scrollableRef = useRef<any>(null);
 
+  useEffect(() => {
+    function calculateHorizontalScrollPercent(element: any) {
+      const { scrollWidth, clientWidth, scrollLeft } = element;
+      const maxScrollLeft = scrollWidth - clientWidth;
+      const percentScrolled = (scrollLeft / maxScrollLeft) * 100;
+      // round to 2 decimal places
+      return Math.round(percentScrolled * 100) / 100;
+    }
+
+    const handleScroll = (event: any) => {
+      if (!event.target) return;
+      const percent = calculateHorizontalScrollPercent(event.target);
+      // if percent < 0.1, fetch previous week
+      // if percent > 0.9, fetch next week
+    };
+
+    const myElement = scrollableRef.current;
+    if (myElement) {
+      myElement.addEventListener("scroll", handleScroll);
+    }
+
+    return () => {
+      if (myElement) {
+        myElement.removeEventListener("scroll", handleScroll);
+      }
+    };
+  }, [scrollableRef]);
   const [initialScroll, setInitialScroll] = useState(false);
   useEffect(() => {
     if (
@@ -104,6 +134,12 @@ const Home: NextPage = () => {
         <title>Kanban!</title>
       </Head>
       <main className="flex h-screen flex-col bg-gray-900">
+        <div className="flex flex-col-reverse px-2 text-white">
+          <Text>
+            Scroll position x: {scroll.x}, y: {scroll.y} percent:{" "}
+            {scroll.percent}
+          </Text>
+        </div>
         <div className="py-18 flex flex-1">
           <DndContext
             onDragStart={onDragStart}
@@ -172,7 +208,10 @@ const Home: NextPage = () => {
                   </SortableContext>
                 </div>
               </div>
-              <div className="flex w-full overflow-x-scroll">
+              <div
+                ref={scrollableRef}
+                className="flex w-full overflow-x-scroll"
+              >
                 {tasksByDateQuery.data?.map((dt) => (
                   <DayColumn key={dt.date.toISOString()} dt={dt} />
                 ))}
