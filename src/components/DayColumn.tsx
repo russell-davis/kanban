@@ -36,11 +36,28 @@ export const DayColumn = (props: {
           strategy={verticalListSortingStrategy}
         >
           <div className="flex h-full shrink flex-col space-y-2 rounded-lg bg-gray-700 p-2">
-            {props.dt.tasks.map((task) => (
-              <Sortable id={task.id} data={task} key={task.id}>
-                <TaskItem key={task.id} task={task} />
-              </Sortable>
-            ))}
+            {props.dt.tasks
+              .sort((a, b) => {
+                // Sort by completed then by priority
+                if (a.completed && !b.completed) {
+                  return 1;
+                }
+                if (!a.completed && b.completed) {
+                  return -1;
+                }
+                if (a.position > b.position) {
+                  return 1;
+                }
+                if (a.position < b.position) {
+                  return -1;
+                }
+                return 0;
+              })
+              .map((task) => (
+                <Sortable id={task.id} data={task} key={task.id}>
+                  <TaskItem key={task.id} task={task} />
+                </Sortable>
+              ))}
             {props.dt.tasks.length === 0 && (
               <Sortable id={props.dt.date.toISOString()} data={{}}>
                 {" "}

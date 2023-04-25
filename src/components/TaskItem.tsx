@@ -13,13 +13,38 @@ export const TaskItem = (props: {
 }) => {
   const utils = api.useContext();
   const deleteTaskMutation = api.kanban.deleteTask.useMutation();
+  const toggleComplete = api.kanban.toggleCompleted.useMutation();
 
   return (
-    <div className="min-h-24 flex w-full flex-1 items-center justify-between rounded-lg bg-gray-200 p-1">
+    <div
+      className={`min-h-24 flex w-full flex-1 items-center justify-between rounded-lg bg-gray-200 p-1 ${
+        props.task.completed ? "opacity-30" : ""
+      }`}
+    >
       <div className="flex flex-1 flex-row items-center space-x-2">
         <ActionIcon
           color={props.task.completed ? "green" : "gray"}
           className=""
+          onClick={(e) => {
+            e.preventDefault();
+            toggleComplete.mutate(
+              {
+                taskId: props.task.id,
+                completed: !props.task.completed,
+              },
+              {
+                onSuccess: () => {
+                  console.info(
+                    `Task ${
+                      !props.task.completed ? "completed" : "uncompleted"
+                    }}`
+                  );
+                  utils.kanban.tasks.refetch();
+                  utils.kanban.backlogTasks.refetch();
+                },
+              }
+            );
+          }}
         >
           <IconCircleCheckFilled size={28} />
         </ActionIcon>
