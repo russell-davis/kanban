@@ -1,7 +1,7 @@
 import { type NextPage } from "next";
 import Head from "next/head";
 import { addDays, endOfDay, isSameDay, startOfDay, subDays } from "date-fns";
-import { api } from "~/utils/api";
+import { api, RouterOutputs } from "~/utils/api";
 import { useEffect, useRef, useState } from "react";
 import {
   closestCenter,
@@ -29,6 +29,65 @@ import { DayColumn } from "~/components/DayColumn";
 import { IconCheck } from "@tabler/icons-react";
 import { TaskItem } from "~/components/TaskItem";
 
+function getNewPosition(
+  dayTasks: RouterOutputs["kanban"]["tasks"][number],
+  over: {
+    date: Date;
+    item: RouterOutputs["kanban"]["tasks"][number]["tasks"][number] | undefined;
+    index: any;
+    id: string;
+  },
+  direction: string
+) {
+  let newPosition = -1;
+
+  // is empty column
+  if (dayTasks.tasks.length === 0) {
+    newPosition = 1;
+  }
+  // is first item
+  else if (over.index === 0 && dayTasks.tasks.length > 0) {
+    if (dayTasks.tasks.length === 1) {
+      newPosition = 2;
+    } else {
+      const firstItem = dayTasks.tasks[0];
+      newPosition = firstItem ? firstItem.position / 2 : 0;
+      console.info(
+        `newPosition = firstItem.position / 2 \n ${newPosition} = ${firstItem?.position} / 2`
+      );
+    }
+  }
+  // is last item
+  else if (
+    over.index === dayTasks.tasks.length - 1 &&
+    dayTasks.tasks.length > 0
+  ) {
+    const lastItem = dayTasks.tasks[dayTasks.tasks.length - 1];
+    newPosition = lastItem ? lastItem.position + 1 : 0;
+    console.info(
+      `newPosition = lastItem ? lastItem.position + 1 : 0 \n ${newPosition} = ${
+        lastItem ? lastItem.position + 1 : 0
+      }`
+    );
+  }
+  // is in the middle
+  else {
+    const prevItem = dayTasks.tasks[over.index - 1];
+    const nextItem = dayTasks.tasks[over.index + 1];
+
+    if (!!prevItem && !!nextItem) {
+      if (direction === "down") {
+        newPosition =
+          ((over.item ? over.item.position : 0) + nextItem.position) / 2;
+      } else {
+        newPosition =
+          (prevItem.position + (over.item ? over.item.position : 0)) / 2;
+      }
+    }
+  }
+  return newPosition;
+}
+
 const Home: NextPage = () => {
   const [startAt, setStartAt] = useState(subDays(startOfDay(new Date()), 3));
   const [endAt, setEndAt] = useState(addDays(endOfDay(new Date()), 7));
@@ -54,7 +113,9 @@ const Home: NextPage = () => {
       .find((t) => t.id === id);
     return task;
   };
-
+  const [tasksCopy, setTasksCopy] = useState<RouterOutputs["kanban"]["tasks"]>(
+    []
+  );
   const [activeDragItem, setActiveDragItem] = useState<{
     id: string;
     title: string;
@@ -84,6 +145,18 @@ const Home: NextPage = () => {
       // round to 2 decimal places
       return Math.round(percentScrolled * 100) / 100;
     }
+    function calculateLeftmostVisibleItem(
+      element: any,
+      columnWidth: number,
+      padding: number
+    ) {
+      const { clientWidth, scrollLeft } = element;
+      const visibleColumns = Math.floor(clientWidth / (columnWidth + padding));
+      const leftmostVisibleIndex = Math.floor(
+        scrollLeft / (columnWidth + padding)
+      );
+      return leftmostVisibleIndex;
+    }
 
     const handleScroll = (event: any) => {
       if (!event.target) return;
@@ -94,6 +167,8 @@ const Home: NextPage = () => {
         //   initialScroll: scrolledToInitialPosition,
         // });
       }
+      const leftMost = calculateLeftmostVisibleItem(event.target, 300, 16);
+      console.info(`leftMost = ${leftMost}`);
       // // if percent < 0.1, fetch previous week
       // if (percent < 0.1) {
       //   setStartAt(subDays(startAt, 7));
@@ -230,6 +305,40 @@ const Home: NextPage = () => {
                   <DayColumn key={dt.date.toISOString()} dt={dt} />
                 ))}
               </div>
+              <div className="BACKLOG min-w-[300px] bg-gray-800">
+                <div className="flex grow flex-row justify-between p-2">
+                  <Text size={"lg"} weight={500} color={"white"}>
+                    Calendar
+                  </Text>
+                </div>
+                <div className="flex grow flex-col p-2">
+                  <SortableContext
+                    items={[]}
+                    id={"calendar"}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    {Array.from({ length: 24 }).map((_, i) => (
+                      <div key={i} className="h-12">
+                        <Sortable id={`hour-${i}`} data={{}}>
+                          <Text
+                            size={"xs"}
+                            weight={600}
+                            className="text-stone-300"
+                          >
+                            {i === 0
+                              ? "12 am"
+                              : i < 12
+                              ? `${i} am`
+                              : i === 12
+                              ? "12 pm"
+                              : `${i - 12} pm`}
+                          </Text>
+                        </Sortable>
+                      </div>
+                    ))}
+                  </SortableContext>
+                </div>
+              </div>
             </div>
             <DragOverlay>
               {activeDragItem ? (
@@ -253,23 +362,49 @@ const Home: NextPage = () => {
       id: event.active.id as string,
       title: event.active.data.current?.title,
     });
+    setTasksCopy(tasksByDateQuery.data ?? []);
   }
   function onDragOver(event: DragOverEvent) {
-    const item = getItemById(event.active.id as string);
-    if (!item) return;
-    setActiveDragItem({ id: event.active.id as string, title: item?.title });
-    console.info("over", {
-      direction: event.delta.y > 0 ? "down" : "up",
-      activeindex: event.active.data.current?.sortable.index,
-      overindex: event.over?.data.current?.sortable.index,
-      at:
-        event.over?.data.current?.sortable.index === 0
-          ? "HEAD"
-          : event.over?.data.current?.sortable.index ===
-            event.over?.data.current?.sortable.items.length - 1
-          ? "TAIL"
-          : undefined,
-    });
+    // update the index of the item being dragged
+    const direction = event.delta.y > 0 ? "down" : "up";
+    const sameCol =
+      event.active.data.current?.sortable.containerId ===
+        event.over?.data.current?.sortable.containerId &&
+      event.active.data.current?.sortable.containerId !== undefined &&
+      event.over?.data.current?.sortable.containerId !== undefined;
+    const over = {
+      id: event.over?.id as string,
+      containerId: event.over?.data.current?.sortable.containerId,
+      date: new Date(event.over?.data.current?.sortable.containerId),
+      index: event.over?.data.current?.sortable.index,
+      item: getItemById(event.over?.id as string),
+    };
+
+    if (over.containerId === "calendar") {
+      // add to calendar list preview
+      console.info(`scheduling ${event.active.id} for ${over.id}`);
+      return;
+    } else {
+      console.info("over", over);
+      const dayTasks = tasksByDateQuery.data?.find((dt) =>
+        isSameDay(dt.date, over.date)
+      );
+      if (!dayTasks) {
+        return;
+      }
+
+      const newPosition = getNewPosition(dayTasks, over, direction);
+      // if in the same column, just update the index
+      if (sameCol) {
+        console.info(`moving ${event.active.id} to ${newPosition} in same col`);
+      }
+      // if in a different column, remove from old column and add to new column
+      else {
+        console.info(
+          `moving ${event.active.id} to ${newPosition} in ${over.date}`
+        );
+      }
+    }
   }
   async function onDragEnd(event: DragEndEvent) {
     console.info("end", event);
@@ -301,52 +436,7 @@ const Home: NextPage = () => {
       return;
     }
 
-    let newPosition = -1;
-
-    // is empty column
-    if (dayTasks.tasks.length === 0) {
-      newPosition = 1;
-    }
-    // is first item
-    else if (over.index === 0 && dayTasks.tasks.length > 0) {
-      if (dayTasks.tasks.length === 1) {
-        newPosition = 2;
-      } else {
-        const firstItem = dayTasks.tasks[0];
-        newPosition = firstItem ? firstItem.position / 2 : 0;
-        console.info(
-          `newPosition = firstItem.position / 2 \n ${newPosition} = ${firstItem?.position} / 2`
-        );
-      }
-    }
-    // is last item
-    else if (
-      over.index === dayTasks.tasks.length - 1 &&
-      dayTasks.tasks.length > 0
-    ) {
-      const lastItem = dayTasks.tasks[dayTasks.tasks.length - 1];
-      newPosition = lastItem ? lastItem.position + 1 : 0;
-      console.info(
-        `newPosition = lastItem ? lastItem.position + 1 : 0 \n ${newPosition} = ${
-          lastItem ? lastItem.position + 1 : 0
-        }`
-      );
-    }
-    // is in the middle
-    else {
-      const prevItem = dayTasks.tasks[over.index - 1];
-      const nextItem = dayTasks.tasks[over.index + 1];
-
-      if (!!prevItem && !!nextItem) {
-        if (direction === "down") {
-          newPosition =
-            ((over.item ? over.item.position : 0) + nextItem.position) / 2;
-        } else {
-          newPosition =
-            (prevItem.position + (over.item ? over.item.position : 0)) / 2;
-        }
-      }
-    }
+    let newPosition = getNewPosition(dayTasks, over, direction);
 
     console.info("new position", newPosition);
 
@@ -438,6 +528,7 @@ const Home: NextPage = () => {
   function onDragCancel(event: DragCancelEvent) {
     console.info("cancel");
     setActiveDragItem(null);
+    setTasksCopy([]);
   }
 };
 
