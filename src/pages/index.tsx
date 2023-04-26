@@ -30,10 +30,12 @@ import { IconCheck } from "@tabler/icons-react";
 import { TaskItem } from "~/components/TaskItem";
 
 function getNewPosition(
-  dayTasks: RouterOutputs["kanban"]["tasks"][number],
+  dayTasks: RouterOutputs["kanban"]["tasks"]["tasksByDate"][number],
   over: {
     date: Date;
-    item: RouterOutputs["kanban"]["tasks"][number]["tasks"][number] | undefined;
+    item:
+      | RouterOutputs["kanban"]["tasks"]["tasksByDate"][number]["tasks"][number]
+      | undefined;
     index: any;
     id: string;
   },
@@ -92,13 +94,13 @@ const Home: NextPage = () => {
   const [startAt, setStartAt] = useState(subDays(startOfDay(new Date()), 3));
   const [endAt, setEndAt] = useState(addDays(endOfDay(new Date()), 7));
   const utils = api.useContext();
-  const seedDb = api.kanban.seed.useMutation();
+  // const seedDb = api.kanban.seed.useMutation();
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const createTaskMutation = api.kanban.create.useMutation();
   const updatePositionMutation = api.kanban.updatePosition.useMutation();
-  const backlogTasksQuery = api.kanban.backlogTasks.useQuery();
+  // const backlogTasksQuery = api.kanban.backlogTasks.useQuery();
 
-  const tasksByDateQuery = api.kanban.tasks.useQuery(
+  const tasksQuery = api.kanban.tasks.useQuery(
     {
       startAt: startAt,
       endAt: endAt,
@@ -106,16 +108,16 @@ const Home: NextPage = () => {
     { refetchOnWindowFocus: false, refetchOnMount: false }
   );
   const getItemById = (id: string) => {
-    let task = backlogTasksQuery.data?.find((t) => t.id === id);
+    let task = tasksQuery.data?.backlog.find((t) => t.id === id);
     if (task) return task;
-    task = tasksByDateQuery.data
+    task = tasksQuery.data?.tasksByDate
       ?.flatMap((dt) => dt.tasks)
       .find((t) => t.id === id);
     return task;
   };
-  const [tasksCopy, setTasksCopy] = useState<RouterOutputs["kanban"]["tasks"]>(
-    []
-  );
+  const [tasksCopy, setTasksCopy] = useState<
+    RouterOutputs["kanban"]["tasks"]["backlog"]
+  >([]);
   const [activeDragItem, setActiveDragItem] = useState<{
     id: string;
     title: string;
@@ -150,8 +152,7 @@ const Home: NextPage = () => {
       columnWidth: number,
       padding: number
     ) {
-      const { clientWidth, scrollLeft } = element;
-      const visibleColumns = Math.floor(clientWidth / (columnWidth + padding));
+      const { scrollLeft } = element;
       const leftmostVisibleIndex = Math.floor(
         scrollLeft / (columnWidth + padding)
       );
@@ -169,6 +170,10 @@ const Home: NextPage = () => {
       }
       const leftMost = calculateLeftmostVisibleItem(event.target, 300, 16);
       console.info(`leftMost = ${leftMost}`);
+      const day = tasksQuery.data?.tasksByDate.at(leftMost);
+      if (day) {
+        console.info(`day = ${day.date}`);
+      }
       // // if percent < 0.1, fetch previous week
       // if (percent < 0.1) {
       //   setStartAt(subDays(startAt, 7));
@@ -191,15 +196,15 @@ const Home: NextPage = () => {
         myElement.removeEventListener("scroll", handleScroll);
       }
     };
-  }, [scrollableRef, scrolledToInitialPosition]);
+  }, [scrollableRef]);
   useEffect(() => {
     if (
-      !!tasksByDateQuery.data &&
-      tasksByDateQuery.data.length > 0 &&
+      !!tasksQuery.data &&
+      tasksQuery.data.tasksByDate.length > 0 &&
       !scrolledToInitialPosition
     ) {
       // find today's column
-      const todayColumn = tasksByDateQuery.data.find((dt) =>
+      const todayColumn = tasksQuery.data.tasksByDate.find((dt) =>
         isSameDay(dt.date, new Date())
       );
       if (todayColumn) {
@@ -215,7 +220,7 @@ const Home: NextPage = () => {
         }
       }
     }
-  }, [tasksByDateQuery.data, scrolledToInitialPosition]);
+  }, [tasksQuery.data, scrolledToInitialPosition]);
 
   return (
     <>
@@ -273,7 +278,7 @@ const Home: NextPage = () => {
                         },
                         {
                           onSuccess: async () => {
-                            await backlogTasksQuery.refetch();
+                            await tasksQuery.refetch();
                             setNewTaskTitle("");
                           },
                         }
@@ -285,11 +290,11 @@ const Home: NextPage = () => {
                 </div>
                 <div className="flex grow flex-col space-y-2 p-2">
                   <SortableContext
-                    items={backlogTasksQuery.data ?? []}
+                    items={tasksQuery.data?.backlog ?? []}
                     id={new Date(0).toISOString()}
                     strategy={verticalListSortingStrategy}
                   >
-                    {backlogTasksQuery.data?.map((task) => (
+                    {tasksQuery.data?.backlog.map((task) => (
                       <Sortable id={task.id} key={task.id} data={task}>
                         <TaskItem key={task.id} task={task} />
                       </Sortable>
@@ -301,7 +306,7 @@ const Home: NextPage = () => {
                 ref={scrollableRef}
                 className="DATE_TASKS flex w-full overflow-x-scroll"
               >
-                {tasksByDateQuery.data?.map((dt) => (
+                {tasksQuery.data?.tasksByDate.map((dt) => (
                   <DayColumn key={dt.date.toISOString()} dt={dt} />
                 ))}
               </div>
@@ -362,7 +367,7 @@ const Home: NextPage = () => {
       id: event.active.id as string,
       title: event.active.data.current?.title,
     });
-    setTasksCopy(tasksByDateQuery.data ?? []);
+    // setTasksCopy(tasksQuery.data?.tasksByDate ?? []);
   }
   function onDragOver(event: DragOverEvent) {
     // update the index of the item being dragged
@@ -386,7 +391,7 @@ const Home: NextPage = () => {
       return;
     } else {
       console.info("over", over);
-      const dayTasks = tasksByDateQuery.data?.find((dt) =>
+      const dayTasks = tasksQuery.data?.tasksByDate.find((dt) =>
         isSameDay(dt.date, over.date)
       );
       if (!dayTasks) {
@@ -429,7 +434,7 @@ const Home: NextPage = () => {
     const sameColumn =
       event.active.data.current?.sortable.containerId === overColumnId;
 
-    const dayTasks = tasksByDateQuery.data?.find((dt) =>
+    const dayTasks = tasksQuery.data?.tasksByDate.find((dt) =>
       isSameDay(dt.date, overColumnDate)
     );
     if (!dayTasks) {
@@ -449,13 +454,11 @@ const Home: NextPage = () => {
       })
       .then(async (res) => {
         console.info("updatePositionMutation", res);
-        await backlogTasksQuery.refetch();
-        await tasksByDateQuery.refetch();
+        await tasksQuery.refetch();
       })
       .catch(async (err) => {
         console.error("ERR updatePositionMutation", err);
-        await backlogTasksQuery.refetch();
-        await tasksByDateQuery.refetch();
+        await tasksQuery.refetch();
       });
     // utils.kanban.tasks.setData(
     //   {
@@ -520,7 +523,7 @@ const Home: NextPage = () => {
       event.active.data.current?.sortable.containerId ===
       new Date(0).toISOString()
     ) {
-      await backlogTasksQuery.refetch();
+      await tasksQuery.refetch();
     }
 
     setActiveDragItem(null);

@@ -49,10 +49,17 @@ export const appRouter = createTRPCRouter({
 
         const tasks = await ctx.prisma.task.findMany({
           where: {
-            date: {
-              gte: input.startAt,
-              lte: input.endAt,
-            },
+            OR: [
+              {
+                date: {
+                  gte: input.startAt,
+                  lte: input.endAt,
+                },
+              },
+              {
+                date: new Date(0),
+              },
+            ],
           },
           orderBy: {
             position: "asc",
@@ -67,7 +74,10 @@ export const appRouter = createTRPCRouter({
           };
         });
 
-        return tasksByDate;
+        return {
+          tasksByDate: tasksByDate,
+          backlog: tasks.filter((task) => task.date.getTime() === 0),
+        };
       }),
     backlogTasks: publicProcedure.query(async ({ ctx }) => {
       const tasks = await ctx.prisma.task.findMany({
