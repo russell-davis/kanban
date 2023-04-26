@@ -1,7 +1,6 @@
-import { api, RouterOutputs } from "~/utils/api";
+import { api, type RouterOutputs } from "~/utils/api";
 import { ActionIcon, Text } from "@mantine/core";
 import {
-  IconCheck,
   IconCircleCheckFilled,
   IconEdit,
   IconTrash,
@@ -33,14 +32,14 @@ export const TaskItem = (props: {
                 completed: !props.task.completed,
               },
               {
-                onSuccess: () => {
+                onSuccess: async () => {
                   console.info(
                     `Task ${
                       !props.task.completed ? "completed" : "uncompleted"
                     }}`
                   );
-                  utils.kanban.tasks.refetch();
-                  utils.kanban.backlogTasks.refetch();
+                  await utils.kanban.tasks.refetch();
+                  await utils.kanban.backlogTasks.refetch();
                 },
               }
             );
@@ -105,10 +104,10 @@ export const TaskItem = (props: {
                 taskId: props.task.id,
               },
               {
-                onSuccess: () => {
+                onSuccess: async () => {
                   console.info("Task deleted");
-                  utils.kanban.tasks.refetch();
-                  utils.kanban.backlogTasks.refetch();
+                  await utils.kanban.tasks.refetch();
+                  await utils.kanban.backlogTasks.refetch();
                 },
               }
             );

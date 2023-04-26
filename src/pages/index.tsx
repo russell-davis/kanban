@@ -6,11 +6,11 @@ import { useEffect, useRef, useState } from "react";
 import {
   closestCenter,
   DndContext,
-  DragCancelEvent,
-  DragEndEvent,
-  DragOverEvent,
+  type DragCancelEvent,
+  type DragEndEvent,
+  type DragOverEvent,
   DragOverlay,
-  DragStartEvent,
+  type DragStartEvent,
   KeyboardSensor,
   MeasuringStrategy,
   MouseSensor,
@@ -22,20 +22,12 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import {
-  ActionIcon,
-  Button,
-  CheckIcon,
-  LoadingOverlay,
-  Text,
-  TextInput,
-} from "@mantine/core";
+import { ActionIcon, Text, TextInput } from "@mantine/core";
 import { coordinateGetter } from "~/components/dndkit/multipleContainersKeyboardCoordinates";
 import { Sortable } from "~/components/Sortable";
 import { DayColumn } from "~/components/DayColumn";
 import { IconCheck } from "@tabler/icons-react";
 import { TaskItem } from "~/components/TaskItem";
-import { useWindowScroll } from "@mantine/hooks";
 
 const Home: NextPage = () => {
   const [startAt, setStartAt] = useState(subDays(startOfDay(new Date()), 3));
@@ -205,8 +197,8 @@ const Home: NextPage = () => {
                           date: new Date(0),
                         },
                         {
-                          onSuccess: () => {
-                            backlogTasksQuery.refetch();
+                          onSuccess: async () => {
+                            await backlogTasksQuery.refetch();
                             setNewTaskTitle("");
                           },
                         }
@@ -279,7 +271,7 @@ const Home: NextPage = () => {
           : undefined,
     });
   }
-  function onDragEnd(event: DragEndEvent) {
+  async function onDragEnd(event: DragEndEvent) {
     console.info("end", event);
     const direction = event.delta.y > 0 ? "down" : "up";
     const active = {
@@ -309,7 +301,7 @@ const Home: NextPage = () => {
       return;
     }
 
-    let newPosition: number = -1;
+    let newPosition = -1;
 
     // is empty column
     if (dayTasks.tasks.length === 0) {
@@ -365,15 +357,15 @@ const Home: NextPage = () => {
         date: overColumnDate,
         position: newPosition,
       })
-      .then((res) => {
+      .then(async (res) => {
         console.info("updatePositionMutation", res);
-        backlogTasksQuery.refetch();
-        tasksByDateQuery.refetch();
+        await backlogTasksQuery.refetch();
+        await tasksByDateQuery.refetch();
       })
-      .catch((err) => {
+      .catch(async (err) => {
         console.error("ERR updatePositionMutation", err);
-        backlogTasksQuery.refetch();
-        tasksByDateQuery.refetch();
+        await backlogTasksQuery.refetch();
+        await tasksByDateQuery.refetch();
       });
     // utils.kanban.tasks.setData(
     //   {
@@ -438,7 +430,7 @@ const Home: NextPage = () => {
       event.active.data.current?.sortable.containerId ===
       new Date(0).toISOString()
     ) {
-      backlogTasksQuery.refetch();
+      await backlogTasksQuery.refetch();
     }
 
     setActiveDragItem(null);

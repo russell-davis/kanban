@@ -1,9 +1,4 @@
-import {
-  createTRPCRouter,
-  protectedProcedure,
-  publicProcedure,
-} from "~/server/api/trpc";
-import { exampleRouter } from "~/server/api/routers/example";
+import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import { z } from "zod";
 import { isSameDay, startOfDay } from "date-fns";
 
@@ -13,7 +8,6 @@ import { isSameDay, startOfDay } from "date-fns";
  * All routers added in /api/routers should be manually added here.
  */
 export const appRouter = createTRPCRouter({
-  example: exampleRouter,
   kanban: createTRPCRouter({
     seed: publicProcedure.mutation(async ({ ctx }) => {
       // reset db

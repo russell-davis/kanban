@@ -3,17 +3,17 @@ const path = require("path");
 
 /** @type {import("eslint").Linter.Config} */
 const config = {
-  overrides: [
-    {
-      extends: [
-        "plugin:@typescript-eslint/recommended-requiring-type-checking",
-      ],
-      files: ["*.ts", "*.tsx"],
-      parserOptions: {
-        project: path.join(__dirname, "tsconfig.json"),
-      },
-    },
-  ],
+  // overrides: [
+  //   {
+  //     extends: [
+  //       "plugin:@typescript-eslint/recommended-requiring-type-checking",
+  //     ],
+  //     files: ["*.ts", "*.tsx"],
+  //     parserOptions: {
+  //       project: path.join(__dirname, "tsconfig.json"),
+  //     },
+  //   },
+  // ],
   parser: "@typescript-eslint/parser",
   parserOptions: {
     project: path.join(__dirname, "tsconfig.json"),
@@ -21,6 +21,9 @@ const config = {
   plugins: ["@typescript-eslint"],
   extends: ["next/core-web-vitals", "plugin:@typescript-eslint/recommended"],
   rules: {
+    "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/no-unsafe-member-access": "off",
+    "@typescript-eslint/no-floating-promises": "warn",
     "@typescript-eslint/consistent-type-imports": [
       "warn",
       {
@@ -28,7 +31,7 @@ const config = {
         fixStyle: "inline-type-imports",
       },
     ],
-    "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
+    "@typescript-eslint/no-unused-vars": "off",
   },
 };
 

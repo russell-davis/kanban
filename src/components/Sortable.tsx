@@ -1,4 +1,4 @@
-import { FC } from "react";
+import { type FC } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
