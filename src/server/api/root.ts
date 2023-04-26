@@ -57,7 +57,7 @@ export const appRouter = createTRPCRouter({
                 },
               },
               {
-                date: new Date(0),
+                backlog: true,
               },
             ],
           },
@@ -70,28 +70,17 @@ export const appRouter = createTRPCRouter({
         const tasksByDate = days.map((date) => {
           return {
             date,
-            tasks: tasks.filter((task) => isSameDay(task.date, date)),
+            tasks: tasks.filter(
+              (task) => isSameDay(task.date, date) && !task.backlog
+            ),
           };
         });
 
         return {
           tasksByDate: tasksByDate,
-          backlog: tasks.filter((task) => task.date.getTime() === 0),
+          backlog: tasks.filter((task) => task.backlog),
         };
       }),
-    backlogTasks: publicProcedure.query(async ({ ctx }) => {
-      const tasks = await ctx.prisma.task.findMany({
-        where: {
-          date: new Date(0),
-        },
-        orderBy: {
-          position: "asc",
-        },
-      });
-      console.info("tasks", tasks);
-
-      return tasks;
-    }),
     create: publicProcedure
       .input(
         z.object({
