@@ -1,6 +1,6 @@
 import { type NextPage } from "next";
 import Head from "next/head";
-import { addDays, endOfDay, isSameDay, startOfDay, subDays } from "date-fns";
+import { addDays, endOfDay, isSameDay, setHours, startOfDay, subDays } from "date-fns";
 import { api, type RouterOutputs } from "~/utils/api";
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -18,26 +18,31 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
+import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { ActionIcon, Button, Text, TextInput } from "@mantine/core";
 import { coordinateGetter } from "~/components/dndkit/multipleContainersKeyboardCoordinates";
 import { Sortable } from "~/components/Sortable";
 import { DayColumn } from "~/components/DayColumn";
 import { IconCheck } from "@tabler/icons-react";
 import { TaskItem } from "~/components/TaskItem";
+import { type Task } from "@prisma/client";
 
 const Home: NextPage = () => {
   const [startAt, setStartAt] = useState(subDays(startOfDay(new Date()), 3));
   const [endAt, setEndAt] = useState(addDays(endOfDay(new Date()), 7));
-  const utils = api.useContext();
-  // const seedDb = api.kanban.seed.useMutation();
   const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [activeDragItem, setActiveDragItem] = useState<
+    RouterOutputs["kanban"]["tasks"]["backlog"][number] | undefined
+  >(undefined);
+  const [currentCalendarDate, setCurrentCalendarDate] = useState(startOfDay(new Date()));
+
+  const scrollableRef = useRef<any>(null);
+  const [scrolledToInitialPosition, setScrolledToInitialPosition] = useState(false);
+  const scrollToToday = () => setScrolledToInitialPosition(false);
+
+  const utils = api.useContext();
   const createTaskMutation = api.kanban.create.useMutation();
   const updatePositionMutation = api.kanban.updatePosition.useMutation();
-  // const backlogTasksQuery = api.kanban.backlogTasks.useQuery();
   const tasksQuery = api.kanban.tasks.useQuery(
     {
       startAt: startAt,
@@ -45,10 +50,7 @@ const Home: NextPage = () => {
     },
     { refetchOnWindowFocus: false, refetchOnMount: false }
   );
-  const [activeDragItem, setActiveDragItem] = useState<{
-    id: string;
-    title: string;
-  } | null>(null);
+
   const sensors = useSensors(
     useSensor(MouseSensor, {
       activationConstraint: {
@@ -60,10 +62,7 @@ const Home: NextPage = () => {
       coordinateGetter,
     })
   );
-  const scrollableRef = useRef<any>(null);
 
-  const [scrolledToInitialPosition, setScrolledToInitialPosition] =
-    useState(false);
   useEffect(() => {
     function calculateHorizontalScrollPercent(element: any) {
       const { scrollWidth, clientWidth, scrollLeft } = element;
@@ -78,9 +77,7 @@ const Home: NextPage = () => {
       padding: number
     ) {
       const { scrollLeft } = element;
-      const leftmostVisibleIndex = Math.floor(
-        scrollLeft / (columnWidth + padding)
-      );
+      const leftmostVisibleIndex = Math.floor(scrollLeft / (columnWidth + padding));
       return leftmostVisibleIndex;
     }
 
@@ -125,7 +122,6 @@ const Home: NextPage = () => {
       }
     };
   }, [scrollableRef, tasksQuery.data?.tasksByDate]);
-  const scrollToToday = () => setScrolledToInitialPosition(false);
   useEffect(() => {
     if (
       !!tasksQuery.data &&
@@ -273,11 +269,7 @@ const Home: NextPage = () => {
                     {Array.from({ length: 24 }).map((_, i) => (
                       <div key={i} className="h-12">
                         <Sortable id={`hour-${i}`} data={{}}>
-                          <Text
-                            size={"xs"}
-                            weight={600}
-                            className="text-stone-300"
-                          >
+                          <Text size={"xs"} weight={600} className="text-stone-300">
                             {i === 0
                               ? "12 am"
                               : i < 12
@@ -309,12 +301,183 @@ const Home: NextPage = () => {
     </>
   );
 
+  function shadowMoveToBacklog(task: Task) {
+    let list = utils.kanban.tasks.getData({
+      startAt: startAt,
+      endAt: endAt,
+    });
+
+    if (!list) return;
+
+    list = {
+      ...list,
+      backlog: list.backlog.concat({
+        ...task,
+        date: new Date(0),
+        backlog: true,
+        position: 1,
+      }),
+      tasksByDate: list.tasksByDate.map((dt) => {
+        if (!isSameDay(dt.date, task.date)) {
+          return dt;
+        }
+        console.info(`Removing task ${task.id} from ${dt.date.toISOString()}`);
+        return {
+          ...dt,
+          tasks: dt.tasks.filter((t) => t.id !== task.id),
+        };
+      }),
+    };
+
+    // set locally
+    utils.kanban.tasks.setData(
+      {
+        startAt: startAt,
+        endAt: endAt,
+      },
+      list
+    );
+  }
+  function shadowMoveToDay(task: Task, date: Date, position: number) {
+    let list = utils.kanban.tasks.getData({
+      startAt: startAt,
+      endAt: endAt,
+    });
+
+    if (!list) return;
+
+    list = {
+      ...list,
+      // make sure task is not in backlog
+      backlog: list.backlog.filter((t) => t.id !== task.id),
+      // add task to day
+      tasksByDate: list.tasksByDate
+        .map((dt) => {
+          // remove task from old day (task.date)
+          if (!isSameDay(dt.date, task.date)) {
+            return dt;
+          }
+          return {
+            ...dt,
+            tasks: dt.tasks.filter((t) => t.id !== task.id),
+          };
+        })
+        .map((dt) => {
+          // add task to new day (date)
+          if (!isSameDay(dt.date, date)) {
+            return dt;
+          }
+          return {
+            ...dt,
+            tasks: dt.tasks.concat({
+              ...task,
+              date: date,
+              backlog: false,
+              position: position,
+            }),
+          };
+        }),
+    };
+
+    // set locally
+    utils.kanban.tasks.setData(
+      {
+        startAt: startAt,
+        endAt: endAt,
+      },
+      list
+    );
+  }
+  function shadowMoveToHour(task: Task, date: Date) {
+    let list = utils.kanban.tasks.getData({
+      startAt: startAt,
+      endAt: endAt,
+    });
+
+    if (!list) return;
+
+    list = {
+      ...list,
+      // make sure task is not in backlog
+      backlog: list.backlog.filter((t) => t.id !== task.id),
+      // add task to day
+      tasksByDate: list.tasksByDate.map((dt) => {
+        // add task to new day (date)
+        if (!isSameDay(dt.date, task.date)) {
+          return dt;
+        }
+        return {
+          ...dt,
+          tasks: dt.tasks.map((t) => {
+            return {
+              ...t,
+              date: date,
+              backlog: false,
+            };
+          }),
+        };
+      }),
+    };
+
+    // set locally
+    utils.kanban.tasks.setData(
+      {
+        startAt: startAt,
+        endAt: endAt,
+      },
+      list
+    );
+  }
+  function moveToBacklog(task: Task) {
+    updatePositionMutation.mutate(
+      {
+        taskId: task.id,
+        date: new Date(0),
+        backlog: true,
+        position: 1,
+      },
+      {
+        onSuccess: async () => {
+          await tasksQuery.refetch();
+        },
+      }
+    );
+  }
+  function moveToDay(task: Task, date: Date, position: number) {
+    updatePositionMutation.mutate(
+      {
+        taskId: task.id,
+        date: date,
+        backlog: false,
+        position: position,
+      },
+      {
+        onSuccess: async () => {
+          await tasksQuery.refetch();
+        },
+      }
+    );
+  }
+  function moveToHour(task: Task, date: Date) {
+    updatePositionMutation.mutate(
+      {
+        taskId: task.id,
+        date: date,
+        backlog: false,
+        position: 0,
+      },
+      {
+        onSuccess: async () => {
+          await tasksQuery.refetch();
+        },
+      }
+    );
+  }
+
   function onDragStart(event: DragStartEvent) {
     console.info("start");
-    setActiveDragItem({
-      id: event.active.id as string,
-      title: event.active.data.current?.title,
-    });
+    const item = getItemById(event.active.id as string, tasksQuery.data);
+    setActiveDragItem(item);
     // setTasksCopy(tasksQuery.data?.tasksByDate ?? []);
   }
   function onDragOver(event: DragOverEvent) {
@@ -325,6 +488,9 @@ const Home: NextPage = () => {
         event.over?.data.current?.sortable.containerId &&
       event.active.data.current?.sortable.containerId !== undefined &&
       event.over?.data.current?.sortable.containerId !== undefined;
+    const active = {
+      item: getItemById(event.active.id as string, tasksQuery.data),
+    };
     const over = {
       id: event.over?.id as string,
       containerId: event.over?.data.current?.sortable.containerId,
@@ -333,10 +499,40 @@ const Home: NextPage = () => {
       item: getItemById(event.over?.id as string, tasksQuery.data),
     };
 
-    if (over.containerId === "calendar") {
+    if (!active.item) {
+      return;
+    }
+
+    if (over.containerId === "backlog") {
+      // if on self ignore
+      if (active.item.id === over.id) {
+        return;
+      }
+      console.info("moving to backlog");
+      shadowMoveToBacklog(active.item);
+      return;
+    } else if (over.containerId === "calendar") {
+      // if on self ignore
+      if (active.item.id === over.id) {
+        return;
+      }
       // add to calendar list preview
+      console.info("moving to calendar");
+      const getHour = (overId: string) => {
+        const hour = overId.split("-")[1];
+        return parseInt(hour ?? "");
+      };
+      const hour = getHour(over.id); // will be 0-23, use this to set the date
+      const newDate = setHours(over.date, hour);
+      console.info("hour", hour);
+
+      shadowMoveToHour(active.item, newDate);
       return;
     } else {
+      // if on self ignore
+      if (active.item.id === over.id) {
+        return;
+      }
       console.info("over", over);
       const dayTasks = tasksQuery.data?.tasksByDate.find((dt) =>
         isSameDay(dt.date, over.date)
@@ -349,12 +545,12 @@ const Home: NextPage = () => {
       // if in the same column, just update the index
       if (sameCol) {
         console.info(`moving ${event.active.id} to ${newPosition} in same col`);
+        shadowMoveToDay(active.item, over.date, newPosition);
       }
       // if in a different column, remove from old column and add to new column
       else {
-        console.info(
-          `moving ${event.active.id} to ${newPosition} in ${over.date}`
-        );
+        console.info(`moving ${event.active.id} to ${newPosition} in ${over.date}`);
+        shadowMoveToDay(active.item, over.date, newPosition);
       }
     }
   }
@@ -378,8 +574,7 @@ const Home: NextPage = () => {
     }
     const overColumnId = event.over?.data.current?.sortable.containerId;
     const overColumnDate = new Date(overColumnId);
-    const sameColumn =
-      event.active.data.current?.sortable.containerId === overColumnId;
+    const sameColumn = event.active.data.current?.sortable.containerId === overColumnId;
 
     if (overColumnId === "backlog") {
       // add to backlog
@@ -435,21 +630,17 @@ const Home: NextPage = () => {
         });
     }
 
-    setActiveDragItem(null);
+    setActiveDragItem(undefined);
   }
   function onDragCancel(event: DragCancelEvent) {
     console.info("cancel");
-    setActiveDragItem(null);
-    // setTasksCopy([]);
+    setActiveDragItem(undefined);
   }
 };
 
 export default Home;
 
-const getItemById = (
-  id: string,
-  tasks: RouterOutputs["kanban"]["tasks"] | undefined
-) => {
+const getItemById = (id: string, tasks: RouterOutputs["kanban"]["tasks"] | undefined) => {
   let task = tasks?.backlog.find((t) => t.id === id);
   if (task) return task;
   task = tasks?.tasksByDate?.flatMap((dt) => dt.tasks).find((t) => t.id === id);
@@ -486,10 +677,7 @@ function getNewPosition(
     }
   }
   // is last item
-  else if (
-    over.index === dayTasks.tasks.length - 1 &&
-    dayTasks.tasks.length > 0
-  ) {
+  else if (over.index === dayTasks.tasks.length - 1 && dayTasks.tasks.length > 0) {
     const lastItem = dayTasks.tasks[dayTasks.tasks.length - 1];
     newPosition = lastItem ? lastItem.position + 1 : 0;
     console.info(
@@ -505,13 +693,17 @@ function getNewPosition(
 
     if (!!prevItem && !!nextItem) {
       if (direction === "down") {
-        newPosition =
-          ((over.item ? over.item.position : 0) + nextItem.position) / 2;
+        newPosition = ((over.item ? over.item.position : 0) + nextItem.position) / 2;
       } else {
-        newPosition =
-          (prevItem.position + (over.item ? over.item.position : 0)) / 2;
+        newPosition = (prevItem.position + (over.item ? over.item.position : 0)) / 2;
       }
     }
   }
   return newPosition;
 }
+
+const time = (func: Function): void => {
+  console.time(func.name); // start timer
+  func(); // execute function
+  console.timeEnd(func.name); // end timer
+};

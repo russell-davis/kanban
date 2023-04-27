@@ -7,10 +7,13 @@ export const Sortable: FC<{ id: string; children: any; data: any }> = ({
   id,
   data,
 }) => {
-  const { attributes, listeners, setNodeRef, transform, transition } =
+  const { attributes, listeners, setNodeRef, transform, transition, isOver } =
     useSortable({
       id: id,
       data: data,
+      disabled: {
+        draggable: id.includes("hour-"),
+      },
     });
 
   const style = {
