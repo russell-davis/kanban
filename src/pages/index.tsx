@@ -1,7 +1,7 @@
 import { type NextPage } from "next";
 import Head from "next/head";
 import { addDays, endOfDay, isSameDay, startOfDay, subDays } from "date-fns";
-import { api, RouterOutputs } from "~/utils/api";
+import { api, type RouterOutputs } from "~/utils/api";
 import { useEffect, useRef, useState } from "react";
 import {
   closestCenter,
@@ -196,7 +196,7 @@ const Home: NextPage = () => {
         myElement.removeEventListener("scroll", handleScroll);
       }
     };
-  }, [scrollableRef]);
+  }, [scrollableRef, tasksQuery.data?.tasksByDate]);
   useEffect(() => {
     if (
       !!tasksQuery.data &&
@@ -441,7 +441,7 @@ const Home: NextPage = () => {
       return;
     }
 
-    let newPosition = getNewPosition(dayTasks, over, direction);
+    const newPosition = getNewPosition(dayTasks, over, direction);
 
     console.info("new position", newPosition);
 

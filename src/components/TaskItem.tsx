@@ -8,7 +8,7 @@ import {
 import { modals } from "@mantine/modals";
 
 export const TaskItem = (props: {
-  task: RouterOutputs["kanban"]["tasks"][number]["tasks"][number];
+  task: RouterOutputs["kanban"]["tasks"]["tasksByDate"][number]["tasks"][number];
 }) => {
   const utils = api.useContext();
   const deleteTaskMutation = api.kanban.deleteTask.useMutation();
@@ -39,7 +39,6 @@ export const TaskItem = (props: {
                     }}`
                   );
                   await utils.kanban.tasks.refetch();
-                  await utils.kanban.backlogTasks.refetch();
                 },
               }
             );
@@ -107,7 +106,6 @@ export const TaskItem = (props: {
                 onSuccess: async () => {
                   console.info("Task deleted");
                   await utils.kanban.tasks.refetch();
-                  await utils.kanban.backlogTasks.refetch();
                 },
               }
             );

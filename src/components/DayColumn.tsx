@@ -9,7 +9,7 @@ import { TaskItem } from "~/components/TaskItem";
 import { isSameDay } from "date-fns";
 
 export const DayColumn = (props: {
-  dt: RouterOutputs["kanban"]["tasks"][number];
+  dt: RouterOutputs["kanban"]["tasks"]["tasksByDate"][number];
 }) => {
   const isToday = isSameDay(props.dt.date, new Date());
   return (
