@@ -250,7 +250,7 @@ const Home: NextPage = () => {
           >
             <div
               id="task-list"
-              className="flex flex-row space-x-2 overflow-x-hidden rounded-lg px-2 py-2"
+              className="flex h-screen flex-row space-x-2 overflow-x-hidden rounded-lg px-2 py-2"
             >
               <div className="BACKLOG min-w-[300px] bg-gray-800">
                 <div className="flex grow flex-row justify-between p-2">
@@ -310,7 +310,7 @@ const Home: NextPage = () => {
                   <DayColumn key={dt.date.toISOString()} dt={dt} />
                 ))}
               </div>
-              <div className="BACKLOG min-w-[300px] bg-gray-800">
+              <div className="BACKLOG min-w-[300px] overflow-y-scroll bg-gray-800">
                 <div className="flex grow flex-row justify-between p-2">
                   <Text size={"lg"} weight={500} color={"white"}>
                     Calendar
