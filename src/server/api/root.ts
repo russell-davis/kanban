@@ -78,7 +78,12 @@ export const appRouter = createTRPCRouter({
 
         return {
           tasksByDate: tasksByDate,
-          backlog: tasks.filter((task) => task.backlog),
+          backlog: tasks
+            .filter((task) => task.backlog)
+            .sort(
+              // createdAt, most recent on top
+              (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
+            ),
         };
       }),
     create: publicProcedure
@@ -99,6 +104,7 @@ export const appRouter = createTRPCRouter({
             title: input.title,
             date: input.date,
             position: maxTaskPosition ? maxTaskPosition.position + 1 : 0,
+            backlog: true,
           },
         });
         console.info("created task", task);
@@ -111,6 +117,7 @@ export const appRouter = createTRPCRouter({
           taskId: z.string(),
           date: z.date(),
           position: z.number(),
+          backlog: z.boolean().default(false),
         })
       )
       .mutation(async ({ input, ctx }) => {
@@ -121,6 +128,7 @@ export const appRouter = createTRPCRouter({
           data: {
             date: input.date,
             position: input.position,
+            backlog: input.backlog,
           },
         });
       }),

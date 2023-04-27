@@ -252,13 +252,13 @@ const Home: NextPage = () => {
               id="task-list"
               className="flex h-screen flex-row space-x-2 overflow-x-hidden rounded-lg px-2 py-2"
             >
-              <div className="BACKLOG min-w-[300px] bg-gray-800">
-                <div className="flex grow flex-row justify-between p-2">
+              <div className="BACKLOG flex min-w-[300px] flex-col bg-gray-800">
+                <div className="TITLE flex flex-row justify-between p-2">
                   <Text size={"lg"} weight={500} color={"white"}>
                     Backlog
                   </Text>
                 </div>
-                <div className="flex grow flex-row items-center justify-between space-x-2 p-2">
+                <div className="ACTIONS flex flex-row items-center justify-between space-x-2 p-2">
                   <TextInput
                     placeholder={"New task"}
                     classNames={{
@@ -288,29 +288,40 @@ const Home: NextPage = () => {
                     <IconCheck color={"green"} />
                   </ActionIcon>
                 </div>
-                <div className="flex grow flex-col space-y-2 p-2">
-                  <SortableContext
-                    items={tasksQuery.data?.backlog ?? []}
-                    id={new Date(0).toISOString()}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    {tasksQuery.data?.backlog.map((task) => (
-                      <Sortable id={task.id} key={task.id} data={task}>
-                        <TaskItem key={task.id} task={task} />
-                      </Sortable>
-                    ))}
-                  </SortableContext>
+                <div className="BACKLOG_LIST flex flex-col overflow-y-auto">
+                  <div className="flex grow flex-col space-y-2 p-2">
+                    <SortableContext
+                      items={tasksQuery.data?.backlog ?? []}
+                      id={"backlog"}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      {tasksQuery.data?.backlog.map((task) => (
+                        <Sortable id={task.id} key={task.id} data={task}>
+                          <TaskItem key={task.id} task={task} />
+                        </Sortable>
+                      ))}
+
+                      {tasksQuery.data?.backlog.length === 0 && (
+                        <Sortable id={"backlog"} data={{}}>
+                          {" "}
+                        </Sortable>
+                      )}
+                    </SortableContext>
+                  </div>
                 </div>
               </div>
-              <div
-                ref={scrollableRef}
-                className="DATE_TASKS flex w-full overflow-x-scroll"
-              >
-                {tasksQuery.data?.tasksByDate.map((dt) => (
-                  <DayColumn key={dt.date.toISOString()} dt={dt} />
-                ))}
+
+              <div className="DAYS flex w-full grow flex-col overflow-x-scroll">
+                <div
+                  ref={scrollableRef}
+                  className="DATE_TASKS flex h-full w-full"
+                >
+                  {tasksQuery.data?.tasksByDate.map((dt) => (
+                    <DayColumn key={dt.date.toISOString()} dt={dt} />
+                  ))}
+                </div>
               </div>
-              <div className="BACKLOG min-w-[300px] overflow-y-scroll bg-gray-800">
+              <div className="CALENDAR min-w-[300px] overflow-y-scroll bg-gray-800">
                 <div className="flex grow flex-row justify-between p-2">
                   <Text size={"lg"} weight={500} color={"white"}>
                     Calendar
@@ -387,7 +398,6 @@ const Home: NextPage = () => {
 
     if (over.containerId === "calendar") {
       // add to calendar list preview
-      console.info(`scheduling ${event.active.id} for ${over.id}`);
       return;
     } else {
       console.info("over", over);
@@ -434,96 +444,58 @@ const Home: NextPage = () => {
     const sameColumn =
       event.active.data.current?.sortable.containerId === overColumnId;
 
-    const dayTasks = tasksQuery.data?.tasksByDate.find((dt) =>
-      isSameDay(dt.date, overColumnDate)
-    );
-    if (!dayTasks) {
-      return;
-    }
+    if (overColumnId === "backlog") {
+      // add to backlog
+      console.info("add to backlog");
 
-    const newPosition = getNewPosition(dayTasks, over, direction);
+      // update the position of the dragged item
+      updatePositionMutation
+        .mutateAsync({
+          taskId: active.id,
+          date: new Date(0),
+          position: 1,
+          backlog: true,
+        })
+        .then(async (res) => {
+          console.info("updatePositionMutation", res);
+        })
+        .catch(async (err) => {
+          console.error("ERR updatePositionMutation", err);
+        })
+        .finally(async () => {
+          await tasksQuery.refetch();
+        });
+    } else if (overColumnId === "calendar") {
+      // add to calendar
+      console.info(`scheduling ${event.active.id} for ${over.id}`);
+    } else {
+      const dayTasks = tasksQuery.data?.tasksByDate.find((dt) =>
+        isSameDay(dt.date, overColumnDate)
+      );
+      if (!dayTasks) {
+        return;
+      }
 
-    console.info("new position", newPosition);
+      const newPosition = getNewPosition(dayTasks, over, direction);
 
-    // update the position of the dragged item
-    updatePositionMutation
-      .mutateAsync({
-        taskId: active.id,
-        date: overColumnDate,
-        position: newPosition,
-      })
-      .then(async (res) => {
-        console.info("updatePositionMutation", res);
-        await tasksQuery.refetch();
-      })
-      .catch(async (err) => {
-        console.error("ERR updatePositionMutation", err);
-        await tasksQuery.refetch();
-      });
-    // utils.kanban.tasks.setData(
-    //   {
-    //     startAt,
-    //     endAt,
-    //   },
-    //   (prev) => {
-    //     if (!prev) {
-    //       return prev;
-    //     }
-    //
-    //     if (sameColumn) {
-    //       return prev.map((dt) => {
-    //         if (isSameDay(dt.date, active.date)) {
-    //           return {
-    //             ...dt,
-    //             tasks: dt.tasks
-    //               .map((task) => {
-    //                 if (task.id === active.id) {
-    //                   return {
-    //                     ...task,
-    //                     position: newPosition,
-    //                     date: sameColumn ? task.date : overColumnDate,
-    //                   };
-    //                 }
-    //                 return task;
-    //               })
-    //               .sort((a, b) => a.position - b.position),
-    //           };
-    //         }
-    //         return dt;
-    //       });
-    //     } else {
-    //       return prev.map((dt) => {
-    //         if (isSameDay(dt.date, active.date)) {
-    //           return {
-    //             ...dt,
-    //             tasks: dt.tasks.filter((task) => task.id !== active.id),
-    //           };
-    //         }
-    //         if (isSameDay(dt.date, overColumnDate)) {
-    //           return {
-    //             ...dt,
-    //             tasks: [
-    //               ...dt.tasks,
-    //               {
-    //                 ...(active.item as any),
-    //                 position: newPosition,
-    //                 date: overColumnDate,
-    //               },
-    //             ].sort((a, b) => a.position - b.position),
-    //           };
-    //         }
-    //         return dt;
-    //       });
-    //     }
-    //   }
-    // );
+      console.info("new position", newPosition);
 
-    // if the item came from the backlog, refresh the backlog list
-    if (
-      event.active.data.current?.sortable.containerId ===
-      new Date(0).toISOString()
-    ) {
-      await tasksQuery.refetch();
+      // update the position of the dragged item
+      updatePositionMutation
+        .mutateAsync({
+          taskId: active.id,
+          date: overColumnDate,
+          position: newPosition,
+        })
+        .then(async (res) => {
+          console.info("updatePositionMutation", res);
+        })
+        .catch(async (err) => {
+          console.error("ERR updatePositionMutation", err);
+        })
+        .finally(async () => {
+          await tasksQuery.refetch();
+        });
     }
 
     setActiveDragItem(null);
