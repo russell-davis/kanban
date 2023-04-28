@@ -19,18 +19,16 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { ActionIcon, Badge, Button, Text, TextInput } from "@mantine/core";
+import { Text } from "@mantine/core";
 import { coordinateGetter } from "~/components/dndkit/multipleContainersKeyboardCoordinates";
 import { Sortable } from "~/components/Sortable";
 import { DayColumn } from "~/components/DayColumn";
-import { IconCheck } from "@tabler/icons-react";
-import { TaskItem } from "~/components/TaskItem";
 import { type Task } from "@prisma/client";
+import { Backlog } from "~/components/backlog";
 
 const Home: NextPage = () => {
   const [startAt, setStartAt] = useState(subDays(startOfDay(new Date()), 3));
   const [endAt, setEndAt] = useState(addDays(endOfDay(new Date()), 7));
-  const [newTaskTitle, setNewTaskTitle] = useState("");
   const [activeDragItem, setActiveDragItem] = useState<
     RouterOutputs["kanban"]["tasks"]["backlog"][number] | undefined
   >(undefined);
@@ -41,7 +39,6 @@ const Home: NextPage = () => {
   const scrollToToday = () => setScrolledToInitialPosition(false);
 
   const utils = api.useContext();
-  const createTaskMutation = api.kanban.create.useMutation();
   const updatePositionMutation = api.kanban.updatePosition.useMutation();
   const tasksQuery = api.kanban.tasks.useQuery(
     {
@@ -163,7 +160,7 @@ const Home: NextPage = () => {
 
     // create an ordered array of { hour, tasks } objects even if the hour has no tasks. this will be used to render the calendar
     const hours = Array.from({ length: 24 }, (_, i) => i).map((hour) => {
-      const tasks = scheduledTasks.filter((t) => t.date.getHours() === hour);
+      const tasks = scheduledTasks.filter((t) => t.scheduledFor?.getHours() === hour);
       return {
         id: hour,
         hour,
@@ -199,72 +196,12 @@ const Home: NextPage = () => {
               id="task-list"
               className="flex h-screen flex-row space-x-2 overflow-x-hidden rounded-lg px-2 py-2"
             >
-              <div className="BACKLOG flex min-w-[300px] flex-col bg-gray-800">
-                <div className="TITLE flex flex-row justify-between p-2">
-                  <Text size={"lg"} weight={500} color={"white"}>
-                    Backlog
-                  </Text>
-                  <Button
-                    compact
-                    onClick={() => {
-                      scrollToToday();
-                    }}
-                  >
-                    Today
-                  </Button>
-                </div>
-                <div className="ACTIONS flex flex-row items-center justify-between space-x-2 p-2">
-                  <TextInput
-                    placeholder={"New task"}
-                    classNames={{
-                      root: "flex-grow",
-                    }}
-                    value={newTaskTitle}
-                    onChange={(e) => setNewTaskTitle(e.currentTarget.value)}
-                  />
-                  <ActionIcon
-                    loading={createTaskMutation.isLoading}
-                    onClick={async () => {
-                      if (newTaskTitle.length === 0) return;
-                      await createTaskMutation.mutateAsync(
-                        {
-                          title: newTaskTitle,
-                          date: startOfDay(new Date(0)),
-                        },
-                        {
-                          onSuccess: async () => {
-                            await tasksQuery.refetch();
-                            setNewTaskTitle("");
-                          },
-                        }
-                      );
-                    }}
-                  >
-                    <IconCheck color={"green"} />
-                  </ActionIcon>
-                </div>
-                <div className="BACKLOG_LIST flex flex-col overflow-y-auto">
-                  <div className="flex grow flex-col space-y-2 p-2">
-                    <SortableContext
-                      items={tasksQuery.data?.backlog ?? []}
-                      id={"backlog"}
-                      strategy={verticalListSortingStrategy}
-                    >
-                      {tasksQuery.data?.backlog.map((task) => (
-                        <Sortable id={task.id} key={task.id} data={task}>
-                          <TaskItem key={task.id} task={task} />
-                        </Sortable>
-                      ))}
-
-                      {tasksQuery.data?.backlog.length === 0 && (
-                        <Sortable id={"backlog"} data={{}}>
-                          {" "}
-                        </Sortable>
-                      )}
-                    </SortableContext>
-                  </div>
-                </div>
-              </div>
+              <Backlog
+                goToTodayClicked={() => {
+                  scrollToToday();
+                }}
+                tasksQueryData={tasksQuery.data}
+              />
 
               <div
                 className="DAYS flex w-full grow flex-col overflow-x-scroll"
@@ -278,9 +215,6 @@ const Home: NextPage = () => {
               </div>
               <div className="CALENDAR min-w-[300px] overflow-y-scroll bg-gray-800">
                 <div className="flex grow flex-col p-2">
-                  {/*<Text size={"lg"} weight={500} color={"white"}>*/}
-                  {/*  Calendar*/}
-                  {/*</Text>*/}
                   <Text size={"xl"} weight={500} color={"white"}>
                     {currentCalendarDate.toLocaleDateString(undefined, {
                       month: "long",
@@ -297,22 +231,37 @@ const Home: NextPage = () => {
                     {calendarTasks.map((ct, i) => (
                       <div key={i} className="h-12">
                         <Sortable id={`hour-${ct.id}`} data={{}}>
-                          <Text size={"xs"} weight={600} className="text-stone-300">
-                            {i === 0
-                              ? "12 am"
-                              : i < 12
-                              ? `${i} am`
-                              : i === 12
-                              ? "12 pm"
-                              : `${i - 12} pm`}
-                          </Text>
+                          <div className="relative">
+                            <div className="absolute left-0 top-0">
+                              <Text size={"xs"} weight={600} className="text-stone-300">
+                                {i === 0
+                                  ? "12 am"
+                                  : i < 12
+                                  ? `${i} am`
+                                  : i === 12
+                                  ? "12 pm"
+                                  : `${i - 12} pm`}
+                              </Text>
+                            </div>
+                          </div>
                           <div className="flex flex-col">
                             {ct.tasks.map((t) => (
-                              <div key={t.id} className="flex flex-row pl-10">
-                                <Badge>
-                                  <Text>{t.title}</Text>
-                                </Badge>
-                              </div>
+                              <Sortable id={t.id} data={t} key={t.id}>
+                                <div className="flex flex-row pl-10">
+                                  <div className="flex flex-col items-start space-y-2 rounded bg-white px-2">
+                                    <Text color={"black"} transform={"none"}>
+                                      {t.title}
+                                    </Text>
+                                    <Text color={"black"} size={9}>
+                                      {t.scheduledFor?.toLocaleTimeString(undefined, {
+                                        hour: "numeric",
+                                        minute: "numeric",
+                                        hour12: true,
+                                      })}
+                                    </Text>
+                                  </div>
+                                </div>
+                              </Sortable>
                             ))}
                           </div>
                         </Sortable>
