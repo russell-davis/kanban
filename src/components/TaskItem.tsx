@@ -47,7 +47,10 @@ export const TaskItem = (props: {
           <Text size={"sm"} weight={500}>
             {props.task.title}
           </Text>
-          <Text size={"xs"}>{format(props.task.date, "h:mm aaa")}</Text>
+          {props.task.date.getHours() === 0 &&
+          props.task.date.getMinutes() === 0 ? null : (
+            <Text size={"xs"}>{format(props.task.date, "h:mm aaa")}</Text>
+          )}
         </div>
       </div>
       <div className="flex flex-row">

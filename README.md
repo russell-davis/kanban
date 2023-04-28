@@ -1,28 +1,49 @@
-# Create T3 App
+# Kanban
 
-This is a [T3 Stack](https://create.t3.gg/) project bootstrapped with `create-t3-app`.
+## What is this?
+This project is a kanban board that is built with Next.js, NextAuth.js, Prisma, Tailwind CSS, and tRPC. 
 
-## What's next? How do I make an app with this?
+## How do I run this?
 
-We try to keep this project as simple as possible, so you can start with just the scaffolding we set up for you, and add additional things later when they become necessary.
+### Prerequisites
+1. `~/.env` - copy the `~/.env.example` file to `~/.env` and fill in the values.
+> If you don't have a .env in the root of the project, you will see error like this:
+>
+> `Invalid environment variables: { "DATABASE_URL": ['Required'] }`
+2. Database (see [below](###database))
+  - sqlite - easiest option to get started
+  - postgres - recommended for production and long term development
+3. Install dependencies with `yarn install`
+4. Initialize the database with `yarn prisma migrate dev`
+   1. If prompted for a name, enter `init`
+5. Regenerate the prisma client with `yarn install` (postinstall script will run `yarn prisma generate`)
+6. Run the development server with `yarn run dev` or `yarn dev`
 
-If you are not familiar with the different technologies used in this project, please refer to the respective docs. If you still are in the wind, please join our [Discord](https://t3.gg/discord) and ask for help.
+
+`yarn run dev` - run the development server with hot reloading. 
+`yarn build` - build the production version of the app. this must be done before running the production server with `yarn start`.
+`yarn start` - run the production server. optionally provide a port with `yarn start -p 3000`.
+
+
+### Database
+#### sqlite
+To use sqlite, make sure your `.env` file has the following:
+```
+DATABASE_URL="file:./db.sqlite"
+```
+then in `~/prisma/schema.prisma` set the provider to sqlite:
+```
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+```
+
+
+If you are not familiar with the different technologies used in this project, please refer to the respective docs.
 
 - [Next.js](https://nextjs.org)
 - [NextAuth.js](https://next-auth.js.org)
 - [Prisma](https://prisma.io)
 - [Tailwind CSS](https://tailwindcss.com)
 - [tRPC](https://trpc.io)
-
-## Learn More
-
-To learn more about the [T3 Stack](https://create.t3.gg/), take a look at the following resources:
-
-- [Documentation](https://create.t3.gg/)
-- [Learn the T3 Stack](https://create.t3.gg/en/faq#what-learning-resources-are-currently-available) — Check out these awesome tutorials
-
-You can check out the [create-t3-app GitHub repository](https://github.com/t3-oss/create-t3-app) — your feedback and contributions are welcome!
-
-## How do I deploy this?
-
-Follow our deployment guides for [Vercel](https://create.t3.gg/en/deployment/vercel), [Netlify](https://create.t3.gg/en/deployment/netlify) and [Docker](https://create.t3.gg/en/deployment/docker) for more information.

@@ -1,14 +1,6 @@
 import { type NextPage } from "next";
 import Head from "next/head";
-import {
-  addDays,
-  endOfDay,
-  isEqual,
-  isSameDay,
-  setHours,
-  startOfDay,
-  subDays,
-} from "date-fns";
+import { addDays, endOfDay, isSameDay, setHours, startOfDay, subDays } from "date-fns";
 import { api, type RouterOutputs } from "~/utils/api";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -94,9 +86,6 @@ const Home: NextPage = () => {
       if (!event.target) return;
       const percent = calculateHorizontalScrollPercent(event.target);
       console.info("percent = ", percent);
-      if (!!activeDragItem) {
-        return;
-      }
       if (percent < 10 || percent > 90) {
         // console.info({
         //   percent,
@@ -169,7 +158,7 @@ const Home: NextPage = () => {
       return [];
     }
     const scheduledTasks = todayColumn.tasks.filter((t) => {
-      return !isEqual(t.date, todayColumn.date);
+      return t.scheduledFor !== null;
     });
 
     // create an ordered array of { hour, tasks } objects even if the hour has no tasks. this will be used to render the calendar
@@ -235,12 +224,12 @@ const Home: NextPage = () => {
                   />
                   <ActionIcon
                     loading={createTaskMutation.isLoading}
-                    onClick={() => {
+                    onClick={async () => {
                       if (newTaskTitle.length === 0) return;
-                      createTaskMutation.mutate(
+                      await createTaskMutation.mutateAsync(
                         {
                           title: newTaskTitle,
-                          date: new Date(0),
+                          date: startOfDay(new Date(0)),
                         },
                         {
                           onSuccess: async () => {
@@ -477,8 +466,8 @@ const Home: NextPage = () => {
       list
     );
   }
-  function moveToBacklog(task: Task) {
-    updatePositionMutation.mutate(
+  async function moveToBacklog(task: Task) {
+    await updatePositionMutation.mutateAsync(
       {
         taskId: task.id,
         date: new Date(0),
@@ -492,8 +481,8 @@ const Home: NextPage = () => {
       }
     );
   }
-  function moveToDay(task: Task, date: Date, position: number) {
-    updatePositionMutation.mutate(
+  async function moveToDay(task: Task, date: Date, position: number) {
+    await updatePositionMutation.mutateAsync(
       {
         taskId: task.id,
         date: date,
@@ -507,14 +496,14 @@ const Home: NextPage = () => {
       }
     );
   }
-  function moveToHour(task: Task, date: Date) {
-    updatePositionMutation.mutate(
+  async function moveToHour(task: Task, date: Date) {
+    await updatePositionMutation.mutateAsync(
       {
         taskId: task.id,
         date: startOfDay(date),
         scheduledFor: date,
         backlog: false,
-        position: 0,
+        position: task.position,
       },
       {
         onSuccess: async () => {
