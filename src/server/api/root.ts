@@ -70,9 +70,7 @@ export const appRouter = createTRPCRouter({
         const tasksByDate = days.map((date) => {
           return {
             date,
-            tasks: tasks.filter(
-              (task) => isSameDay(task.date, date) && !task.backlog
-            ),
+            tasks: tasks.filter((task) => isSameDay(task.date, date) && !task.backlog),
           };
         });
 
@@ -118,6 +116,7 @@ export const appRouter = createTRPCRouter({
           date: z.date(),
           position: z.number(),
           backlog: z.boolean().default(false),
+          scheduledFor: z.date().optional(),
         })
       )
       .mutation(async ({ input, ctx }) => {
@@ -129,6 +128,7 @@ export const appRouter = createTRPCRouter({
             date: input.date,
             position: input.position,
             backlog: input.backlog,
+            scheduledFor: input.scheduledFor,
           },
         });
       }),
@@ -177,11 +177,7 @@ function getDateList(start: Date, end: Date): Date[] {
   const dateList: Date[] = [];
 
   // Set the start date to midnight
-  const currentDate = new Date(
-    start.getFullYear(),
-    start.getMonth(),
-    start.getDate()
-  );
+  const currentDate = new Date(start.getFullYear(), start.getMonth(), start.getDate());
 
   // Loop through all the dates between the start and end dates
   while (currentDate <= end) {

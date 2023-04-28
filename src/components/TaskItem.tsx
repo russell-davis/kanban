@@ -1,11 +1,8 @@
 import { api, type RouterOutputs } from "~/utils/api";
 import { ActionIcon, Text } from "@mantine/core";
-import {
-  IconCircleCheckFilled,
-  IconEdit,
-  IconTrash,
-} from "@tabler/icons-react";
+import { IconCircleCheckFilled, IconEdit, IconTrash } from "@tabler/icons-react";
 import { modals } from "@mantine/modals";
+import { format } from "date-fns";
 
 export const TaskItem = (props: {
   task: RouterOutputs["kanban"]["tasks"]["tasksByDate"][number]["tasks"][number];
@@ -24,6 +21,8 @@ export const TaskItem = (props: {
         <ActionIcon
           color={props.task.completed ? "green" : "gray"}
           className=""
+          loading={toggleComplete.isLoading}
+          disabled={toggleComplete.isLoading}
           onClick={(e) => {
             e.preventDefault();
             toggleComplete.mutate(
@@ -34,9 +33,7 @@ export const TaskItem = (props: {
               {
                 onSuccess: async () => {
                   console.info(
-                    `Task ${
-                      !props.task.completed ? "completed" : "uncompleted"
-                    }}`
+                    `Task ${!props.task.completed ? "completed" : "uncompleted"}}`
                   );
                   await utils.kanban.tasks.refetch();
                 },
@@ -46,9 +43,12 @@ export const TaskItem = (props: {
         >
           <IconCircleCheckFilled size={28} />
         </ActionIcon>
-        <Text size={"sm"} weight={500}>
-          {props.task.title}
-        </Text>
+        <div className="flex flex-col">
+          <Text size={"sm"} weight={500}>
+            {props.task.title}
+          </Text>
+          <Text size={"xs"}>{format(props.task.date, "h:mm aaa")}</Text>
+        </div>
       </div>
       <div className="flex flex-row">
         <ActionIcon
@@ -78,6 +78,27 @@ export const TaskItem = (props: {
                     <ActionIcon
                       color={props.task.completed ? "green" : "gray"}
                       className="mt-2"
+                      loading={toggleComplete.isLoading}
+                      disabled={toggleComplete.isLoading}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        toggleComplete.mutate(
+                          {
+                            taskId: props.task.id,
+                            completed: !props.task.completed,
+                          },
+                          {
+                            onSuccess: async () => {
+                              console.info(
+                                `Task ${
+                                  !props.task.completed ? "completed" : "uncompleted"
+                                }}`
+                              );
+                              await utils.kanban.tasks.refetch();
+                            },
+                          }
+                        );
+                      }}
                     >
                       <IconCircleCheckFilled size={28} />
                     </ActionIcon>
@@ -95,6 +116,8 @@ export const TaskItem = (props: {
         </ActionIcon>
 
         <ActionIcon
+          loading={deleteTaskMutation.isLoading}
+          disabled={deleteTaskMutation.isLoading}
           onClick={(e) => {
             e.stopPropagation();
             e.preventDefault();

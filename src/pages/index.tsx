@@ -1,8 +1,16 @@
 import { type NextPage } from "next";
 import Head from "next/head";
-import { addDays, endOfDay, isSameDay, setHours, startOfDay, subDays } from "date-fns";
+import {
+  addDays,
+  endOfDay,
+  isEqual,
+  isSameDay,
+  setHours,
+  startOfDay,
+  subDays,
+} from "date-fns";
 import { api, type RouterOutputs } from "~/utils/api";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   closestCenter,
   DndContext,
@@ -19,7 +27,7 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { ActionIcon, Button, Text, TextInput } from "@mantine/core";
+import { ActionIcon, Badge, Button, Text, TextInput } from "@mantine/core";
 import { coordinateGetter } from "~/components/dndkit/multipleContainersKeyboardCoordinates";
 import { Sortable } from "~/components/Sortable";
 import { DayColumn } from "~/components/DayColumn";
@@ -77,6 +85,7 @@ const Home: NextPage = () => {
       padding: number
     ) {
       const { scrollLeft } = element;
+
       const leftmostVisibleIndex = Math.floor(scrollLeft / (columnWidth + padding));
       return leftmostVisibleIndex;
     }
@@ -94,10 +103,11 @@ const Home: NextPage = () => {
         //   initialScroll: scrolledToInitialPosition,
         // });
       }
-      const leftMost = calculateLeftmostVisibleItem(event.target, 300, 16);
+      const leftMost = calculateLeftmostVisibleItem(event.target, 300, 0);
       const day = tasksQuery.data?.tasksByDate.at(leftMost);
       if (day) {
-        // console.info(`day = ${day.date}`);
+        console.info(`day = ${day.date}`);
+        setCurrentCalendarDate(day.date);
       }
       // // if percent < 0.1, fetch previous week
       // if (percent < 0.1) {
@@ -147,18 +157,41 @@ const Home: NextPage = () => {
     }
   }, [tasksQuery.data, scrolledToInitialPosition]);
 
+  // useMemo to compute the tasks that do not have a default date (start of the day) for the current day
+  const calendarTasks = useMemo(() => {
+    if (!tasksQuery.data?.tasksByDate) {
+      return [];
+    }
+    const todayColumn = tasksQuery.data.tasksByDate.find((dt) =>
+      isSameDay(dt.date, currentCalendarDate)
+    );
+    if (!todayColumn) {
+      return [];
+    }
+    const scheduledTasks = todayColumn.tasks.filter((t) => {
+      return !isEqual(t.date, todayColumn.date);
+    });
+
+    // create an ordered array of { hour, tasks } objects even if the hour has no tasks. this will be used to render the calendar
+    const hours = Array.from({ length: 24 }, (_, i) => i).map((hour) => {
+      const tasks = scheduledTasks.filter((t) => t.date.getHours() === hour);
+      return {
+        id: hour,
+        hour,
+        tasks,
+      };
+    });
+
+    return hours;
+  }, [tasksQuery.data?.tasksByDate, currentCalendarDate]);
+
   return (
     <>
       <Head>
         <title>Kanban!</title>
       </Head>
       <main className="flex h-screen flex-col bg-gray-900">
-        <div className="flex flex-col-reverse px-2 text-white">
-          {/*<Text>*/}
-          {/*  Scroll position x: {scroll.x}, y: {scroll.y} percent:{" "}*/}
-          {/*  {scroll.percent}*/}
-          {/*</Text>*/}
-        </div>
+        <div className="flex flex-col-reverse px-2 text-white"></div>
         <div className="py-18 flex flex-1">
           <DndContext
             onDragStart={onDragStart}
@@ -255,20 +288,26 @@ const Home: NextPage = () => {
                 </div>
               </div>
               <div className="CALENDAR min-w-[300px] overflow-y-scroll bg-gray-800">
-                <div className="flex grow flex-row justify-between p-2">
-                  <Text size={"lg"} weight={500} color={"white"}>
-                    Calendar
+                <div className="flex grow flex-col p-2">
+                  {/*<Text size={"lg"} weight={500} color={"white"}>*/}
+                  {/*  Calendar*/}
+                  {/*</Text>*/}
+                  <Text size={"xl"} weight={500} color={"white"}>
+                    {currentCalendarDate.toLocaleDateString(undefined, {
+                      month: "long",
+                      day: "numeric",
+                    })}
                   </Text>
                 </div>
                 <div className="flex grow flex-col p-2">
                   <SortableContext
-                    items={[]}
+                    items={calendarTasks}
                     id={"calendar"}
                     strategy={verticalListSortingStrategy}
                   >
-                    {Array.from({ length: 24 }).map((_, i) => (
+                    {calendarTasks.map((ct, i) => (
                       <div key={i} className="h-12">
-                        <Sortable id={`hour-${i}`} data={{}}>
+                        <Sortable id={`hour-${ct.id}`} data={{}}>
                           <Text size={"xs"} weight={600} className="text-stone-300">
                             {i === 0
                               ? "12 am"
@@ -278,6 +317,15 @@ const Home: NextPage = () => {
                               ? "12 pm"
                               : `${i - 12} pm`}
                           </Text>
+                          <div className="flex flex-col">
+                            {ct.tasks.map((t) => (
+                              <div key={t.id} className="flex flex-row pl-10">
+                                <Badge>
+                                  <Text>{t.title}</Text>
+                                </Badge>
+                              </div>
+                            ))}
+                          </div>
                         </Sortable>
                       </div>
                     ))}
@@ -411,7 +459,8 @@ const Home: NextPage = () => {
           tasks: dt.tasks.map((t) => {
             return {
               ...t,
-              date: date,
+              date: startOfDay(date),
+              scheduledFor: date,
               backlog: false,
             };
           }),
@@ -462,7 +511,8 @@ const Home: NextPage = () => {
     updatePositionMutation.mutate(
       {
         taskId: task.id,
-        date: date,
+        date: startOfDay(date),
+        scheduledFor: date,
         backlog: false,
         position: 0,
       },
@@ -478,7 +528,6 @@ const Home: NextPage = () => {
     console.info("start");
     const item = getItemById(event.active.id as string, tasksQuery.data);
     setActiveDragItem(item);
-    // setTasksCopy(tasksQuery.data?.tasksByDate ?? []);
   }
   function onDragOver(event: DragOverEvent) {
     // update the index of the item being dragged
@@ -518,12 +567,8 @@ const Home: NextPage = () => {
       }
       // add to calendar list preview
       console.info("moving to calendar");
-      const getHour = (overId: string) => {
-        const hour = overId.split("-")[1];
-        return parseInt(hour ?? "");
-      };
       const hour = getHour(over.id); // will be 0-23, use this to set the date
-      const newDate = setHours(over.date, hour);
+      const newDate = setHours(currentCalendarDate, hour);
       console.info("hour", hour);
 
       shadowMoveToHour(active.item, newDate);
@@ -576,30 +621,24 @@ const Home: NextPage = () => {
     const overColumnDate = new Date(overColumnId);
     const sameColumn = event.active.data.current?.sortable.containerId === overColumnId;
 
+    // if over self, ignore
+    if (active.id === over.id) {
+      return;
+    }
+
     if (overColumnId === "backlog") {
       // add to backlog
       console.info("add to backlog");
 
       // update the position of the dragged item
-      updatePositionMutation
-        .mutateAsync({
-          taskId: active.id,
-          date: new Date(0),
-          position: 1,
-          backlog: true,
-        })
-        .then(async (res) => {
-          console.info("updatePositionMutation", res);
-        })
-        .catch(async (err) => {
-          console.error("ERR updatePositionMutation", err);
-        })
-        .finally(async () => {
-          await tasksQuery.refetch();
-        });
+      moveToBacklog(active.item);
     } else if (overColumnId === "calendar") {
       // add to calendar
       console.info(`scheduling ${event.active.id} for ${over.id}`);
+      const hour = getHour(over.id); // will be 0-23, use this to set the date
+      const newDate = setHours(currentCalendarDate, hour);
+      moveToHour(active.item, newDate);
+      console.info("hour", hour);
     } else {
       const dayTasks = tasksQuery.data?.tasksByDate.find((dt) =>
         isSameDay(dt.date, overColumnDate)
@@ -609,98 +648,94 @@ const Home: NextPage = () => {
       }
 
       const newPosition = getNewPosition(dayTasks, over, direction);
-
-      console.info("new position", newPosition);
-
-      // update the position of the dragged item
-      updatePositionMutation
-        .mutateAsync({
-          taskId: active.id,
-          date: overColumnDate,
-          position: newPosition,
-        })
-        .then(async (res) => {
-          console.info("updatePositionMutation", res);
-        })
-        .catch(async (err) => {
-          console.error("ERR updatePositionMutation", err);
-        })
-        .finally(async () => {
-          await tasksQuery.refetch();
-        });
+      // if in the same column, just update the index
+      if (sameColumn) {
+        console.info(`moving ${event.active.id} to ${newPosition} in same col`);
+        moveToDay(active.item, over.date, newPosition);
+      }
+      // if in a different column, remove from old column and add to new column
+      else {
+        console.info(`moving ${event.active.id} to ${newPosition} in ${over.date}`);
+        moveToDay(active.item, over.date, newPosition);
+      }
     }
 
     setActiveDragItem(undefined);
   }
-  function onDragCancel(event: DragCancelEvent) {
+  async function onDragCancel(event: DragCancelEvent) {
     console.info("cancel");
     setActiveDragItem(undefined);
+    await tasksQuery.refetch();
+  }
+
+  function getItemById(id: string, tasks: RouterOutputs["kanban"]["tasks"] | undefined) {
+    let task = tasks?.backlog.find((t) => t.id === id);
+    if (task) return task;
+    task = tasks?.tasksByDate?.flatMap((dt) => dt.tasks).find((t) => t.id === id);
+    return task;
+  }
+  function getNewPosition(
+    dayTasks: RouterOutputs["kanban"]["tasks"]["tasksByDate"][number],
+    over: {
+      date: Date;
+      item:
+        | RouterOutputs["kanban"]["tasks"]["tasksByDate"][number]["tasks"][number]
+        | undefined;
+      index: any;
+      id: string;
+    },
+    direction: string
+  ) {
+    let newPosition = -1;
+
+    // is empty column
+    if (dayTasks.tasks.length === 0) {
+      newPosition = 1;
+    }
+    // is first item
+    else if (over.index === 0 && dayTasks.tasks.length > 0) {
+      if (dayTasks.tasks.length === 1) {
+        newPosition = 2;
+      } else {
+        const firstItem = dayTasks.tasks[0];
+        newPosition = firstItem ? firstItem.position / 2 : 0;
+        console.info(
+          `newPosition = firstItem.position / 2 \n ${newPosition} = ${firstItem?.position} / 2`
+        );
+      }
+    }
+    // is last item
+    else if (over.index === dayTasks.tasks.length - 1 && dayTasks.tasks.length > 0) {
+      const lastItem = dayTasks.tasks[dayTasks.tasks.length - 1];
+      newPosition = lastItem ? lastItem.position + 1 : 0;
+      console.info(
+        `newPosition = lastItem ? lastItem.position + 1 : 0 \n ${newPosition} = ${
+          lastItem ? lastItem.position + 1 : 0
+        }`
+      );
+    }
+    // is in the middle
+    else {
+      const prevItem = dayTasks.tasks[over.index - 1];
+      const nextItem = dayTasks.tasks[over.index + 1];
+
+      if (!!prevItem && !!nextItem) {
+        if (direction === "down") {
+          newPosition = ((over.item ? over.item.position : 0) + nextItem.position) / 2;
+        } else {
+          newPosition = (prevItem.position + (over.item ? over.item.position : 0)) / 2;
+        }
+      }
+    }
+    return newPosition;
+  }
+  function getHour(overId: string) {
+    const hour = overId.split("-")[1];
+    return parseInt(hour ?? "");
   }
 };
 
 export default Home;
-
-const getItemById = (id: string, tasks: RouterOutputs["kanban"]["tasks"] | undefined) => {
-  let task = tasks?.backlog.find((t) => t.id === id);
-  if (task) return task;
-  task = tasks?.tasksByDate?.flatMap((dt) => dt.tasks).find((t) => t.id === id);
-  return task;
-};
-function getNewPosition(
-  dayTasks: RouterOutputs["kanban"]["tasks"]["tasksByDate"][number],
-  over: {
-    date: Date;
-    item:
-      | RouterOutputs["kanban"]["tasks"]["tasksByDate"][number]["tasks"][number]
-      | undefined;
-    index: any;
-    id: string;
-  },
-  direction: string
-) {
-  let newPosition = -1;
-
-  // is empty column
-  if (dayTasks.tasks.length === 0) {
-    newPosition = 1;
-  }
-  // is first item
-  else if (over.index === 0 && dayTasks.tasks.length > 0) {
-    if (dayTasks.tasks.length === 1) {
-      newPosition = 2;
-    } else {
-      const firstItem = dayTasks.tasks[0];
-      newPosition = firstItem ? firstItem.position / 2 : 0;
-      console.info(
-        `newPosition = firstItem.position / 2 \n ${newPosition} = ${firstItem?.position} / 2`
-      );
-    }
-  }
-  // is last item
-  else if (over.index === dayTasks.tasks.length - 1 && dayTasks.tasks.length > 0) {
-    const lastItem = dayTasks.tasks[dayTasks.tasks.length - 1];
-    newPosition = lastItem ? lastItem.position + 1 : 0;
-    console.info(
-      `newPosition = lastItem ? lastItem.position + 1 : 0 \n ${newPosition} = ${
-        lastItem ? lastItem.position + 1 : 0
-      }`
-    );
-  }
-  // is in the middle
-  else {
-    const prevItem = dayTasks.tasks[over.index - 1];
-    const nextItem = dayTasks.tasks[over.index + 1];
-
-    if (!!prevItem && !!nextItem) {
-      if (direction === "down") {
-        newPosition = ((over.item ? over.item.position : 0) + nextItem.position) / 2;
-      } else {
-        newPosition = (prevItem.position + (over.item ? over.item.position : 0)) / 2;
-      }
-    }
-  }
-  return newPosition;
-}
 
 const time = (func: Function): void => {
   console.time(func.name); // start timer
