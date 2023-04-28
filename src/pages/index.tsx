@@ -8,6 +8,7 @@ import {
   DndContext,
   type DragCancelEvent,
   type DragEndEvent,
+  DragMoveEvent,
   type DragOverEvent,
   DragOverlay,
   type DragStartEvent,
@@ -35,6 +36,7 @@ const Home: NextPage = () => {
   const [currentCalendarDate, setCurrentCalendarDate] = useState(startOfDay(new Date()));
 
   const scrollableRef = useRef<any>(null);
+  const [scrollPosition, setScrollPosition] = useState({ x: 0, y: 0 });
   const [scrolledToInitialPosition, setScrolledToInitialPosition] = useState(false);
   const scrollToToday = () => setScrolledToInitialPosition(false);
 
@@ -81,6 +83,11 @@ const Home: NextPage = () => {
 
     const handleScroll = (event: any) => {
       if (!event.target) return;
+      if (!!activeDragItem) {
+        // prevent scrolling while dragging
+        event.target.scrollLeft = scrollPosition.x;
+        return;
+      }
       const percent = calculateHorizontalScrollPercent(event.target);
       console.info("percent = ", percent);
       if (percent < 10 || percent > 90) {
@@ -117,7 +124,7 @@ const Home: NextPage = () => {
         myElement.removeEventListener("scroll", handleScroll);
       }
     };
-  }, [scrollableRef, tasksQuery.data?.tasksByDate]);
+  }, [scrollableRef, tasksQuery.data?.tasksByDate, activeDragItem]);
   useEffect(() => {
     if (
       !!tasksQuery.data &&
@@ -204,7 +211,9 @@ const Home: NextPage = () => {
               />
 
               <div
-                className="DAYS flex w-full grow flex-col overflow-x-scroll"
+                className={`DAYS flex w-full grow flex-col
+                ${activeDragItem ? "scroll- overflow-x-hidden" : "overflow-x-scroll"}
+                `}
                 ref={scrollableRef}
               >
                 <div className="DATE_TASKS flex h-full w-full">
@@ -230,7 +239,12 @@ const Home: NextPage = () => {
                   >
                     {calendarTasks.map((ct, i) => (
                       <div key={i} className="h-12">
-                        <Sortable id={`hour-${ct.id}`} data={{}}>
+                        <Sortable
+                          id={`hour-${ct.id}`}
+                          data={{
+                            draggable: false,
+                          }}
+                        >
                           <div className="relative">
                             <div className="absolute left-0 top-0">
                               <Text size={"xs"} weight={600} className="text-stone-300">
@@ -246,7 +260,7 @@ const Home: NextPage = () => {
                           </div>
                           <div className="flex flex-col">
                             {ct.tasks.map((t) => (
-                              <Sortable id={t.id} data={t} key={t.id}>
+                              <Sortable id={`agenda-${t.id}`} data={t} key={t.id}>
                                 <div className="flex flex-row pl-10">
                                   <div className="flex flex-col items-start space-y-2 rounded bg-white px-2">
                                     <Text color={"black"} transform={"none"}>
@@ -302,6 +316,7 @@ const Home: NextPage = () => {
         date: new Date(0),
         backlog: true,
         position: 1,
+        scheduledFor: null,
       }),
       tasksByDate: list.tasksByDate.map((dt) => {
         if (!isSameDay(dt.date, task.date)) {
@@ -341,7 +356,10 @@ const Home: NextPage = () => {
         .map((dt) => {
           // remove task from old day (task.date)
           if (!isSameDay(dt.date, task.date)) {
-            return dt;
+            return {
+              ...dt,
+              tasks: dt.tasks.filter((t) => t.id !== task.id),
+            };
           }
           return {
             ...dt,
@@ -353,6 +371,7 @@ const Home: NextPage = () => {
           if (!isSameDay(dt.date, date)) {
             return dt;
           }
+          const movingToDifferentDay = !isSameDay(task.date, date);
           return {
             ...dt,
             tasks: dt.tasks.concat({
@@ -360,6 +379,7 @@ const Home: NextPage = () => {
               date: date,
               backlog: false,
               position: position,
+              scheduledFor: movingToDifferentDay ? null : task.scheduledFor,
             }),
           };
         }),
@@ -374,7 +394,8 @@ const Home: NextPage = () => {
       list
     );
   }
-  function shadowMoveToHour(task: Task, date: Date) {
+  function shadowMoveToHour(task: Task, hour: number, currentCalendarDate: Date) {
+    const newDate = setHours(currentCalendarDate, hour);
     let list = utils.kanban.tasks.getData({
       startAt: startAt,
       endAt: endAt,
@@ -386,19 +407,25 @@ const Home: NextPage = () => {
       ...list,
       // make sure task is not in backlog
       backlog: list.backlog.filter((t) => t.id !== task.id),
-      // add task to day
+      // add task to day to task.date, then set scheduledFor to date
       tasksByDate: list.tasksByDate.map((dt) => {
-        // add task to new day (date)
         if (!isSameDay(dt.date, task.date)) {
-          return dt;
+          return {
+            ...dt,
+            tasks: dt.tasks.filter((t) => t.id !== task.id),
+          };
         }
         return {
           ...dt,
           tasks: dt.tasks.map((t) => {
+            if (t.id !== task.id) {
+              return t;
+            }
+            const newDate = setHours(currentCalendarDate, hour);
             return {
               ...t,
-              date: startOfDay(date),
-              scheduledFor: date,
+              date: startOfDay(currentCalendarDate),
+              scheduledFor: newDate,
               backlog: false,
             };
           }),
@@ -422,6 +449,7 @@ const Home: NextPage = () => {
         date: new Date(0),
         backlog: true,
         position: 1,
+        scheduledFor: null,
       },
       {
         onSuccess: async () => {
@@ -431,12 +459,19 @@ const Home: NextPage = () => {
     );
   }
   async function moveToDay(task: Task, date: Date, position: number) {
+    // if the task is being moved from to a different day, we need to update the position and reset the scheduledFor
+    const movingToDifferentDay =
+      !isSameDay(task.date, date) &&
+      // is not midnight
+      task.scheduledFor &&
+      task.scheduledFor.getHours() !== 0;
     await updatePositionMutation.mutateAsync(
       {
         taskId: task.id,
         date: date,
         backlog: false,
         position: position,
+        scheduledFor: movingToDifferentDay ? date : task.scheduledFor,
       },
       {
         onSuccess: async () => {
@@ -445,12 +480,13 @@ const Home: NextPage = () => {
       }
     );
   }
-  async function moveToHour(task: Task, date: Date) {
+  async function moveToHour(task: Task, hour: number, currentCalendarDate: Date) {
+    const newDate = setHours(currentCalendarDate, hour);
     await updatePositionMutation.mutateAsync(
       {
         taskId: task.id,
-        date: startOfDay(date),
-        scheduledFor: date,
+        date: startOfDay(currentCalendarDate),
+        scheduledFor: newDate,
         backlog: false,
         position: task.position,
       },
@@ -461,30 +497,76 @@ const Home: NextPage = () => {
       }
     );
   }
+  async function handleBacklogDrop(
+    active: { date: Date; item?: Task; index: any; id: string },
+    over: { date: any; item?: Task; index: any; id: any }
+  ) {
+    if (!active.item) return;
+
+    // add to backlog
+    console.info("add to backlog");
+
+    // update the position of the dragged item
+    await moveToBacklog(active.item);
+  }
+  async function handleCalendarDrop(
+    active: { date: Date; item?: Task; index: any; id: string },
+    over: { date: any; item?: Task; index: any; id: any }
+  ) {
+    if (!active.item) return;
+    // if over self, ignore
+    if (active.id === over.id) {
+      return;
+    }
+    // add to calendar
+    console.info(`scheduling ${active.id} for ${over.id}`);
+    const hour = parseInt(over.id); // will be 0-23, use this to set the date
+    await moveToHour(active.item, hour, currentCalendarDate);
+    console.info("hour", hour);
+  }
+  async function handleDayDrop(
+    active: { date: Date; item?: Task; index: any; id: string },
+    over: { date: Date; item?: Task; index: any; id: string },
+    direction: "up" | "down",
+    sameColumn: boolean
+  ) {
+    const dayTasks = tasksQuery.data?.tasksByDate.find((dt) =>
+      isSameDay(dt.date, over.date)
+    );
+    if (!dayTasks) {
+      return;
+    }
+
+    if (!over) return;
+    const newPosition = getNewPosition(dayTasks, over, direction);
+
+    // if in the same column, just update the index
+    if (sameColumn) {
+      console.info(`moving ${active.id} to ${newPosition} in same col`);
+    }
+    // if in a different column, remove from old column and add to new column
+    else {
+      console.info(`moving ${active.id} to ${newPosition} in ${over.date}`);
+    }
+
+    if (!active.item) return;
+
+    await moveToDay(active.item, over.date, newPosition);
+  }
 
   function onDragStart(event: DragStartEvent) {
     console.info("start");
     const item = getItemById(event.active.id as string, tasksQuery.data);
     setActiveDragItem(item);
+    const scrollPosition = getScrollPosition(scrollableRef.current);
+    setScrollPosition(scrollPosition);
   }
   function onDragOver(event: DragOverEvent) {
     // update the index of the item being dragged
-    const direction = event.delta.y > 0 ? "down" : "up";
-    const sameCol =
-      event.active.data.current?.sortable.containerId ===
-        event.over?.data.current?.sortable.containerId &&
-      event.active.data.current?.sortable.containerId !== undefined &&
-      event.over?.data.current?.sortable.containerId !== undefined;
-    const active = {
-      item: getItemById(event.active.id as string, tasksQuery.data),
-    };
-    const over = {
-      id: event.over?.id as string,
-      containerId: event.over?.data.current?.sortable.containerId,
-      date: new Date(event.over?.data.current?.sortable.containerId),
-      index: event.over?.data.current?.sortable.index,
-      item: getItemById(event.over?.id as string, tasksQuery.data),
-    };
+    const direction = getDirection(event);
+    const sameCol = isSameColumn(event);
+    const active = getActive(event);
+    const over = getOver(event);
 
     if (!active.item) {
       return;
@@ -505,11 +587,9 @@ const Home: NextPage = () => {
       }
       // add to calendar list preview
       console.info("moving to calendar");
-      const hour = getHour(over.id); // will be 0-23, use this to set the date
-      const newDate = setHours(currentCalendarDate, hour);
+      const hour = parseInt(over.id); // will be 0-23, use this to set the date
       console.info("hour", hour);
-
-      shadowMoveToHour(active.item, newDate);
+      shadowMoveToHour(active.item, hour, currentCalendarDate);
       return;
     } else {
       // if on self ignore
@@ -537,65 +617,22 @@ const Home: NextPage = () => {
       }
     }
   }
-  function onDragEnd(event: DragEndEvent) {
+  async function onDragEnd(event: DragEndEvent) {
     console.info("end", event);
-    const direction = event.delta.y > 0 ? "down" : "up";
-    const active = {
-      id: event.active.id as string,
-      date: new Date(event.active.data.current?.sortable.containerId),
-      index: event.active.data.current?.sortable.index,
-      item: getItemById(event.active.id as string, tasksQuery.data),
-    };
-    const over = {
-      id: event.over?.id as string,
-      date: new Date(event.over?.data.current?.sortable.containerId),
-      index: event.over?.data.current?.sortable.index,
-      item: getItemById(event.over?.id as string, tasksQuery.data),
-    };
+    const direction = getDirection(event);
+    const active = getActive(event);
+    const over = getOver(event);
     if (!active.item) {
       return;
     }
-    const overColumnId = event.over?.data.current?.sortable.containerId;
-    const overColumnDate = new Date(overColumnId);
-    const sameColumn = event.active.data.current?.sortable.containerId === overColumnId;
+    const sameColumn = isSameColumn(event);
 
-    // if over self, ignore
-    if (active.id === over.id) {
-      return;
-    }
-
-    if (overColumnId === "backlog") {
-      // add to backlog
-      console.info("add to backlog");
-
-      // update the position of the dragged item
-      moveToBacklog(active.item);
-    } else if (overColumnId === "calendar") {
-      // add to calendar
-      console.info(`scheduling ${event.active.id} for ${over.id}`);
-      const hour = getHour(over.id); // will be 0-23, use this to set the date
-      const newDate = setHours(currentCalendarDate, hour);
-      moveToHour(active.item, newDate);
-      console.info("hour", hour);
+    if (over.containerId === "backlog") {
+      await handleBacklogDrop(active, over);
+    } else if (over.containerId === "calendar") {
+      await handleCalendarDrop(active, over);
     } else {
-      const dayTasks = tasksQuery.data?.tasksByDate.find((dt) =>
-        isSameDay(dt.date, overColumnDate)
-      );
-      if (!dayTasks) {
-        return;
-      }
-
-      const newPosition = getNewPosition(dayTasks, over, direction);
-      // if in the same column, just update the index
-      if (sameColumn) {
-        console.info(`moving ${event.active.id} to ${newPosition} in same col`);
-        moveToDay(active.item, over.date, newPosition);
-      }
-      // if in a different column, remove from old column and add to new column
-      else {
-        console.info(`moving ${event.active.id} to ${newPosition} in ${over.date}`);
-        moveToDay(active.item, over.date, newPosition);
-      }
+      await handleDayDrop(active, over, direction, sameColumn);
     }
 
     setActiveDragItem(undefined);
@@ -616,9 +653,7 @@ const Home: NextPage = () => {
     dayTasks: RouterOutputs["kanban"]["tasks"]["tasksByDate"][number],
     over: {
       date: Date;
-      item:
-        | RouterOutputs["kanban"]["tasks"]["tasksByDate"][number]["tasks"][number]
-        | undefined;
+      item?: RouterOutputs["kanban"]["tasks"]["tasksByDate"][number]["tasks"][number];
       index: any;
       id: string;
     },
@@ -667,9 +702,49 @@ const Home: NextPage = () => {
     }
     return newPosition;
   }
-  function getHour(overId: string) {
-    const hour = overId.split("-")[1];
-    return parseInt(hour ?? "");
+  function stripIdPrefix(id: string) {
+    // replace "hour-" and "agenda-" and "backlog-" with ""
+    return id.replace(/(hour-|agenda-|backlog-)/, "");
+  }
+  function getDirection(event: DragMoveEvent) {
+    return event.delta.y > 0 ? "down" : "up";
+  }
+  function isSameColumn(event: DragMoveEvent) {
+    console.info("isSameColumn", event);
+    if (!activeDragItem || !event.over?.data.current?.sortable) {
+      return false;
+    }
+    return (
+      event.active.data.current?.sortable.containerId ===
+      event.over?.data.current?.sortable.containerId
+    );
+  }
+  function getActive(event: DragMoveEvent) {
+    console.info("active", event);
+    // if (!activeDragItem || !event.active?.data.current?.sortable) {
+    //   return false;
+    // }
+    return {
+      id: stripIdPrefix(event.active.id as string),
+      date: new Date(event.active.data.current?.sortable.containerId),
+      index: event.active.data.current?.sortable.index,
+      item: activeDragItem,
+      containerId: event.active?.data.current?.sortable.containerId,
+    };
+  }
+  function getOver(event: DragMoveEvent) {
+    console.info("getOver", event);
+    return {
+      id: stripIdPrefix(event.over?.id as string),
+      date: new Date(event.over?.data.current?.sortable.containerId),
+      index: event.over?.data.current?.sortable.index,
+      item: getItemById(stripIdPrefix(event.over?.id as string), tasksQuery.data),
+      containerId: event.over?.data.current?.sortable.containerId,
+    };
+  }
+  function getScrollPosition(element: any) {
+    const { scrollLeft, scrollTop } = element;
+    return { x: scrollLeft, y: scrollTop };
   }
 };
 

@@ -12,7 +12,7 @@ export const Sortable: FC<{ id: string; children: any; data: any }> = ({
       id: id,
       data: data,
       disabled: {
-        draggable: id.includes("hour-"),
+        draggable: data.draggable !== undefined ? data.draggable : false,
       },
     });
 

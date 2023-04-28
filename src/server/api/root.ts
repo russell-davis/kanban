@@ -116,7 +116,7 @@ export const appRouter = createTRPCRouter({
           date: z.date(),
           position: z.number(),
           backlog: z.boolean().default(false),
-          scheduledFor: z.date().optional(),
+          scheduledFor: z.date().nullable(),
         })
       )
       .mutation(async ({ input, ctx }) => {
