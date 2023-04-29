@@ -70,6 +70,9 @@ const Home: NextPage = () => {
       // round to 2 decimal places
       return Math.round(percentScrolled * 100) / 100;
     }
+
+    // write a function that calculates the leftmost visible item in a horizontal scrollable. the
+    // function should take the scrollable element, and the width of the items in the scrollable.
     function calculateLeftmostVisibleItem(
       element: any,
       columnWidth: number,
@@ -89,7 +92,6 @@ const Home: NextPage = () => {
         return;
       }
       const percent = calculateHorizontalScrollPercent(event.target);
-      console.info("percent = ", percent);
       if (percent < 10 || percent > 90) {
         // console.info({
         //   percent,
@@ -503,9 +505,6 @@ const Home: NextPage = () => {
   ) {
     if (!active.item) return;
 
-    // add to backlog
-    console.info("add to backlog");
-
     // update the position of the dragged item
     await moveToBacklog(active.item);
   }
@@ -618,7 +617,6 @@ const Home: NextPage = () => {
     }
   }
   async function onDragEnd(event: DragEndEvent) {
-    console.info("end", event);
     const direction = getDirection(event);
     const active = getActive(event);
     const over = getOver(event);
@@ -710,7 +708,6 @@ const Home: NextPage = () => {
     return event.delta.y > 0 ? "down" : "up";
   }
   function isSameColumn(event: DragMoveEvent) {
-    console.info("isSameColumn", event);
     if (!activeDragItem || !event.over?.data.current?.sortable) {
       return false;
     }
@@ -720,7 +717,6 @@ const Home: NextPage = () => {
     );
   }
   function getActive(event: DragMoveEvent) {
-    console.info("active", event);
     // if (!activeDragItem || !event.active?.data.current?.sortable) {
     //   return false;
     // }
@@ -733,7 +729,6 @@ const Home: NextPage = () => {
     };
   }
   function getOver(event: DragMoveEvent) {
-    console.info("getOver", event);
     return {
       id: stripIdPrefix(event.over?.id as string),
       date: new Date(event.over?.data.current?.sortable.containerId),
