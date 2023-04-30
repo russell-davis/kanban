@@ -4,6 +4,8 @@ import { ActionIcon, Card, Group, Stack, Text } from "@mantine/core";
 import { useDraggable } from "@dnd-kit/core";
 import { DRAGABLES } from "~/pages";
 import { IconCalendar, IconCircleCheck, IconClock } from "@tabler/icons-react";
+import { Timer } from "~/components/task/Timer";
+import { DatePicker } from "@mantine/dates";
 
 export const TaskCard: FC<{
   task: Task & { subtasks: Subtask[] };
@@ -15,7 +17,9 @@ export const TaskCard: FC<{
       task: task,
     },
   });
-  const [timerOpen, setTimerOpen] = useState<boolean>(false);
+  const [timerOpen, setTimerOpen] = useState<boolean>(true);
+  const [datePickerOpen, setDatePickerOpen] = useState<boolean>(false);
+  const [datePickerDate, setDatePickerDate] = useState<Date | null>(task.date);
 
   return (
     <Card
@@ -55,8 +59,15 @@ export const TaskCard: FC<{
             <Text size={"xs"}>work</Text>
           </Group>
           {timerOpen && (
-            <Group>
-              <div className="timer">timer</div>
+            <Timer
+              currentDuration={0}
+              onStart={() => console.log("start")}
+              onStop={(duration) => console.log("stop", duration)}
+            />
+          )}
+          {datePickerOpen && (
+            <Group position="center">
+              <DatePicker value={datePickerDate} onChange={setDatePickerDate} />
             </Group>
           )}
         </Stack>
