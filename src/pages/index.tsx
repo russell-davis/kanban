@@ -19,13 +19,18 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { Text } from "@mantine/core";
 import { coordinateGetter } from "~/components/dndkit/multipleContainersKeyboardCoordinates";
-import { Sortable } from "~/components/Sortable";
 import { DayColumn } from "~/components/DayColumn";
 import { type Task } from "@prisma/client";
 import { Backlog } from "~/components/backlog";
+import { Agenda } from "~/components/agenda";
+
+export const DRAGABLES = {
+  CALENDAR: "calendar",
+  BACKLOG: "backlog",
+  BOARD: "board",
+  TASK: "task",
+};
 
 const Home: NextPage = () => {
   const [startAt, setStartAt] = useState(subDays(startOfDay(new Date()), 3));
@@ -78,9 +83,19 @@ const Home: NextPage = () => {
       columnWidth: number,
       padding: number
     ) {
-      const { scrollLeft } = element;
+      const { scrollLeft, scrollWidth } = element;
 
-      const leftmostVisibleIndex = Math.floor(scrollLeft / (columnWidth + padding));
+      const numberOfItems = tasksQuery.data?.tasksByDate.length || 0;
+      const widthPerItem = document.querySelector(".DAY_COLUMN")?.clientWidth || 0;
+
+      // ex: if the scrollLeft is between 0 and 300, the leftmost visible item is index 0
+      // ex: if the scrollLeft is between 300 and 600, the leftmost visible item is index 1
+      // ex: if the scrollLeft is between 600 and 900, the leftmost visible item is index 2
+      const scrollPercent = scrollLeft / scrollWidth;
+
+      let leftmostVisibleIndex = Math.round((scrollLeft / scrollWidth) * numberOfItems);
+      console.info(leftmostVisibleIndex);
+
       return leftmostVisibleIndex;
     }
 
@@ -98,10 +113,12 @@ const Home: NextPage = () => {
         //   initialScroll: scrolledToInitialPosition,
         // });
       }
+
       const leftMost = calculateLeftmostVisibleItem(event.target, 300, 0);
       const day = tasksQuery.data?.tasksByDate.at(leftMost);
-      if (day) {
+      if (day && !isSameDay(day.date, currentCalendarDate)) {
         console.info(`day = ${day.date}`);
+        console.info(`diff = ${day.date.getTime() - currentCalendarDate.getTime()}`);
         setCurrentCalendarDate(day.date);
       }
       // // if percent < 0.1, fetch previous week
@@ -213,79 +230,19 @@ const Home: NextPage = () => {
               />
 
               <div
-                className={`DAYS flex w-full grow flex-col
+                className={`DAYS flex h-full w-full grow
                 ${activeDragItem ? "scroll- overflow-x-hidden" : "overflow-x-scroll"}
                 `}
                 ref={scrollableRef}
               >
-                <div className="DATE_TASKS flex h-full w-full">
-                  {tasksQuery.data?.tasksByDate.map((dt) => (
-                    <DayColumn key={dt.date.toISOString()} dt={dt} />
-                  ))}
-                </div>
+                {tasksQuery.data?.tasksByDate.map((dt) => (
+                  <DayColumn key={dt.date.toISOString()} dt={dt} />
+                ))}
+                {/*<div className="DATE_TASKS flex h-full w-full">*/}
+                {/*  */}
+                {/*</div>*/}
               </div>
-              <div className="CALENDAR min-w-[300px] overflow-y-scroll bg-gray-800">
-                <div className="flex grow flex-col p-2">
-                  <Text size={"xl"} weight={500} color={"white"}>
-                    {currentCalendarDate.toLocaleDateString(undefined, {
-                      month: "long",
-                      day: "numeric",
-                    })}
-                  </Text>
-                </div>
-                <div className="flex grow flex-col p-2">
-                  <SortableContext
-                    items={calendarTasks}
-                    id={"calendar"}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    {calendarTasks.map((ct, i) => (
-                      <div key={i} className="h-12">
-                        <Sortable
-                          id={`hour-${ct.id}`}
-                          data={{
-                            draggable: false,
-                          }}
-                        >
-                          <div className="relative">
-                            <div className="absolute left-0 top-0">
-                              <Text size={"xs"} weight={600} className="text-stone-300">
-                                {i === 0
-                                  ? "12 am"
-                                  : i < 12
-                                  ? `${i} am`
-                                  : i === 12
-                                  ? "12 pm"
-                                  : `${i - 12} pm`}
-                              </Text>
-                            </div>
-                          </div>
-                          <div className="flex flex-col">
-                            {ct.tasks.map((t) => (
-                              <Sortable id={`agenda-${t.id}`} data={t} key={t.id}>
-                                <div className="flex flex-row pl-10">
-                                  <div className="flex flex-col items-start space-y-2 rounded bg-white px-2">
-                                    <Text color={"black"} transform={"none"}>
-                                      {t.title}
-                                    </Text>
-                                    <Text color={"black"} size={9}>
-                                      {t.scheduledFor?.toLocaleTimeString(undefined, {
-                                        hour: "numeric",
-                                        minute: "numeric",
-                                        hour12: true,
-                                      })}
-                                    </Text>
-                                  </div>
-                                </div>
-                              </Sortable>
-                            ))}
-                          </div>
-                        </Sortable>
-                      </div>
-                    ))}
-                  </SortableContext>
-                </div>
-              </div>
+              <Agenda items={calendarTasks} currentCalendarDate={currentCalendarDate} />
             </div>
             <DragOverlay>
               {activeDragItem ? (
@@ -322,7 +279,10 @@ const Home: NextPage = () => {
       }),
       tasksByDate: list.tasksByDate.map((dt) => {
         if (!isSameDay(dt.date, task.date)) {
-          return dt;
+          return {
+            ...dt,
+            tasks: dt.tasks.filter((t) => t.id !== task.id),
+          };
         }
         console.info(`Removing task ${task.id} from ${dt.date.toISOString()}`);
         return {
@@ -499,59 +459,6 @@ const Home: NextPage = () => {
       }
     );
   }
-  async function handleBacklogDrop(
-    active: { date: Date; item?: Task; index: any; id: string },
-    over: { date: any; item?: Task; index: any; id: any }
-  ) {
-    if (!active.item) return;
-
-    // update the position of the dragged item
-    await moveToBacklog(active.item);
-  }
-  async function handleCalendarDrop(
-    active: { date: Date; item?: Task; index: any; id: string },
-    over: { date: any; item?: Task; index: any; id: any }
-  ) {
-    if (!active.item) return;
-    // if over self, ignore
-    if (active.id === over.id) {
-      return;
-    }
-    // add to calendar
-    console.info(`scheduling ${active.id} for ${over.id}`);
-    const hour = parseInt(over.id); // will be 0-23, use this to set the date
-    await moveToHour(active.item, hour, currentCalendarDate);
-    console.info("hour", hour);
-  }
-  async function handleDayDrop(
-    active: { date: Date; item?: Task; index: any; id: string },
-    over: { date: Date; item?: Task; index: any; id: string },
-    direction: "up" | "down",
-    sameColumn: boolean
-  ) {
-    const dayTasks = tasksQuery.data?.tasksByDate.find((dt) =>
-      isSameDay(dt.date, over.date)
-    );
-    if (!dayTasks) {
-      return;
-    }
-
-    if (!over) return;
-    const newPosition = getNewPosition(dayTasks, over, direction);
-
-    // if in the same column, just update the index
-    if (sameColumn) {
-      console.info(`moving ${active.id} to ${newPosition} in same col`);
-    }
-    // if in a different column, remove from old column and add to new column
-    else {
-      console.info(`moving ${active.id} to ${newPosition} in ${over.date}`);
-    }
-
-    if (!active.item) return;
-
-    await moveToDay(active.item, over.date, newPosition);
-  }
 
   function onDragStart(event: DragStartEvent) {
     console.info("start");
@@ -561,76 +468,102 @@ const Home: NextPage = () => {
     setScrollPosition(scrollPosition);
   }
   function onDragOver(event: DragOverEvent) {
-    // update the index of the item being dragged
-    const direction = getDirection(event);
-    const sameCol = isSameColumn(event);
-    const active = getActive(event);
-    const over = getOver(event);
-
-    if (!active.item) {
+    const o = event.over?.data.current;
+    if (
+      !(o && o.type) ||
+      !event.over ||
+      !event.over.id ||
+      !activeDragItem ||
+      event.active.id === event.over?.id
+    ) {
       return;
     }
-
-    if (over.containerId === "backlog") {
+    const type = o.type;
+    if (type === DRAGABLES.BACKLOG) {
+      // move to backlog
       // if on self ignore
-      if (active.item.id === over.id) {
+      if (
+        event.active?.id === event.over?.id &&
+        // neither is nullish
+        !!event.active?.id &&
+        !!event.over?.id
+      ) {
         return;
       }
       console.info("moving to backlog");
-      shadowMoveToBacklog(active.item);
+      shadowMoveToBacklog(activeDragItem);
       return;
-    } else if (over.containerId === "calendar") {
-      // if on self ignore
-      if (active.item.id === over.id) {
-        return;
-      }
-      // add to calendar list preview
+    }
+    // move to calendar
+    else if (type === DRAGABLES.CALENDAR) {
+      const over = event.over.data.current as { hour: number; type: string };
+      // move to calendar
       console.info("moving to calendar");
-      const hour = parseInt(over.id); // will be 0-23, use this to set the date
-      console.info("hour", hour);
-      shadowMoveToHour(active.item, hour, currentCalendarDate);
+      shadowMoveToHour(activeDragItem, over.hour, currentCalendarDate);
       return;
-    } else {
-      // if on self ignore
-      if (active.item.id === over.id) {
+    }
+    // move to day
+    else if (type === DRAGABLES.TASK) {
+      const overContainer = event.over.data.current?.sortable.containerId;
+      const overDate = new Date(overContainer);
+      const dayTasks = tasksQuery.data?.tasksByDate.find((dt) =>
+        isSameDay(dt.date, overDate)
+      );
+      if (!dayTasks) {
         return;
       }
-      console.info("over", over);
+      const overItem = getItemById(
+        stripIdPrefix(event.over?.id as string),
+        tasksQuery.data
+      );
+      const direction = getDirection(event);
+      const newPosition = getNewPosition(
+        dayTasks,
+        event.over?.data.current?.sortable.index,
+        overItem ? overItem.position : 0,
+        direction
+      );
+      shadowMoveToDay(activeDragItem, overDate, newPosition);
+    }
+  }
+  async function onDragEnd(event: DragEndEvent) {
+    if (!activeDragItem) {
+      return;
+    }
+
+    const overType = event.over?.data.current?.type;
+    if (overType === DRAGABLES.BACKLOG) {
+      // update the position of the dragged item
+      await moveToBacklog(activeDragItem);
+    }
+    // calendar
+    else if (overType === DRAGABLES.CALENDAR) {
+      const over = event.over?.data?.current as { hour: number; type: string };
+
+      // add to calendar
+      await moveToHour(activeDragItem, over.hour, currentCalendarDate);
+    }
+    // task
+    else if (overType === DRAGABLES.TASK) {
+      const overDate = new Date(event.over?.data.current?.sortable.containerId);
+      const overIndex = event.over?.data.current?.sortable.index;
+      const overItemPosition = event.over?.data.current?.sortable.itemPosition;
+
       const dayTasks = tasksQuery.data?.tasksByDate.find((dt) =>
-        isSameDay(dt.date, over.date)
+        isSameDay(dt.date, overDate)
       );
       if (!dayTasks) {
         return;
       }
 
-      const newPosition = getNewPosition(dayTasks, over, direction);
-      // if in the same column, just update the index
-      if (sameCol) {
-        console.info(`moving ${event.active.id} to ${newPosition} in same col`);
-        shadowMoveToDay(active.item, over.date, newPosition);
-      }
-      // if in a different column, remove from old column and add to new column
-      else {
-        console.info(`moving ${event.active.id} to ${newPosition} in ${over.date}`);
-        shadowMoveToDay(active.item, over.date, newPosition);
-      }
-    }
-  }
-  async function onDragEnd(event: DragEndEvent) {
-    const direction = getDirection(event);
-    const active = getActive(event);
-    const over = getOver(event);
-    if (!active.item) {
-      return;
-    }
-    const sameColumn = isSameColumn(event);
-
-    if (over.containerId === "backlog") {
-      await handleBacklogDrop(active, over);
-    } else if (over.containerId === "calendar") {
-      await handleCalendarDrop(active, over);
-    } else {
-      await handleDayDrop(active, over, direction, sameColumn);
+      const direction = getDirection(event);
+      const newPosition = getNewPosition(
+        dayTasks,
+        overIndex,
+        overItemPosition,
+        direction
+      );
+      await moveToDay(activeDragItem, overDate, newPosition);
     }
 
     setActiveDragItem(undefined);
@@ -649,12 +582,8 @@ const Home: NextPage = () => {
   }
   function getNewPosition(
     dayTasks: RouterOutputs["kanban"]["tasks"]["tasksByDate"][number],
-    over: {
-      date: Date;
-      item?: RouterOutputs["kanban"]["tasks"]["tasksByDate"][number]["tasks"][number];
-      index: any;
-      id: string;
-    },
+    overIndex: number,
+    overItemPosition: number,
     direction: string
   ) {
     let newPosition = -1;
@@ -664,7 +593,7 @@ const Home: NextPage = () => {
       newPosition = 1;
     }
     // is first item
-    else if (over.index === 0 && dayTasks.tasks.length > 0) {
+    else if (overIndex === 0 && dayTasks.tasks.length > 0) {
       if (dayTasks.tasks.length === 1) {
         newPosition = 2;
       } else {
@@ -676,7 +605,7 @@ const Home: NextPage = () => {
       }
     }
     // is last item
-    else if (over.index === dayTasks.tasks.length - 1 && dayTasks.tasks.length > 0) {
+    else if (overIndex === dayTasks.tasks.length - 1 && dayTasks.tasks.length > 0) {
       const lastItem = dayTasks.tasks[dayTasks.tasks.length - 1];
       newPosition = lastItem ? lastItem.position + 1 : 0;
       console.info(
@@ -687,14 +616,14 @@ const Home: NextPage = () => {
     }
     // is in the middle
     else {
-      const prevItem = dayTasks.tasks[over.index - 1];
-      const nextItem = dayTasks.tasks[over.index + 1];
+      const prevItem = dayTasks.tasks[overIndex - 1];
+      const nextItem = dayTasks.tasks[overIndex + 1];
 
       if (!!prevItem && !!nextItem) {
         if (direction === "down") {
-          newPosition = ((over.item ? over.item.position : 0) + nextItem.position) / 2;
+          newPosition = (overItemPosition + nextItem.position) / 2;
         } else {
-          newPosition = (prevItem.position + (over.item ? over.item.position : 0)) / 2;
+          newPosition = (overItemPosition + prevItem.position) / 2;
         }
       }
     }

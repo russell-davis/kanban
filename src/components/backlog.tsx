@@ -6,6 +6,7 @@ import { IconCheck } from "@tabler/icons-react";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Sortable } from "~/components/Sortable";
 import { TaskItem } from "~/components/TaskItem";
+import { DRAGABLES } from "~/pages";
 
 export const Backlog = (props: {
   goToTodayClicked: () => void;
@@ -68,13 +69,13 @@ export const Backlog = (props: {
             strategy={verticalListSortingStrategy}
           >
             {props.tasksQueryData?.backlog.map((task) => (
-              <Sortable id={task.id} key={task.id} data={task}>
+              <Sortable id={task.id} key={task.id} data={task} type={DRAGABLES.BACKLOG}>
                 <TaskItem key={task.id} task={task} />
               </Sortable>
             ))}
 
             {props.tasksQueryData?.backlog.length === 0 && (
-              <Sortable id={"backlog"} data={{}}>
+              <Sortable id={"backlog"} data={{}} type={DRAGABLES.BACKLOG}>
                 {" "}
               </Sortable>
             )}

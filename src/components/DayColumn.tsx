@@ -1,12 +1,10 @@
 import type { RouterOutputs } from "~/utils/api";
 import { Text } from "@mantine/core";
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
+import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Sortable } from "~/components/Sortable";
 import { TaskItem } from "~/components/TaskItem";
 import { isSameDay } from "date-fns";
+import { DRAGABLES } from "~/pages";
 
 export const DayColumn = (props: {
   dt: RouterOutputs["kanban"]["tasks"]["tasksByDate"][number];
@@ -19,11 +17,7 @@ export const DayColumn = (props: {
       }`}
     >
       <div className="DATE_TASK_LIST flex w-full flex-col space-y-3 p-1">
-        <div
-          className={`${
-            isToday ? "rounded border border-white  pl-2" : ""
-          } p-1`}
-        >
+        <div className={`${isToday ? "rounded border border-white  pl-2" : ""} p-1`}>
           <Text size={"md"} weight={500} color={"white"}>
             {props.dt.date.toLocaleDateString("en-US", {
               dateStyle: "medium",
@@ -55,12 +49,16 @@ export const DayColumn = (props: {
                   return 0;
                 })
                 .map((task) => (
-                  <Sortable id={task.id} data={task} key={task.id}>
+                  <Sortable id={task.id} data={task} key={task.id} type={DRAGABLES.TASK}>
                     <TaskItem key={task.id} task={task} />
                   </Sortable>
                 ))}
               {props.dt.tasks.length === 0 && (
-                <Sortable id={props.dt.date.toISOString()} data={{}}>
+                <Sortable
+                  id={props.dt.date.toISOString()}
+                  data={{}}
+                  type={DRAGABLES.TASK}
+                >
                   {" "}
                 </Sortable>
               )}
