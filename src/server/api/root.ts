@@ -64,6 +64,13 @@ export const appRouter = createTRPCRouter({
           orderBy: {
             position: "asc",
           },
+          include: {
+            subtasks: {
+              orderBy: {
+                id: "asc",
+              },
+            },
+          },
         });
         console.info("tasks", tasks.length);
 
