@@ -51,7 +51,8 @@ export const DayColumn = (props: {
           >
             <div
               className={`flex h-full shrink flex-col space-y-2 rounded-lg p-2 ${classNames(
-                entry?.isIntersecting ? "bg-green-400" : "bg-gray-700"
+                // entry?.isIntersecting ? "bg-green-400" :
+                "bg-gray-700"
               )}`}
             >
               {props.dt.tasks
