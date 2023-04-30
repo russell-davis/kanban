@@ -66,7 +66,7 @@ export const Agenda = (props: {
                 </Sortable>
               ))}
               {item.tasks.length === 0 && (
-                <div className="flex flex-row pl-10 text-white">no tasks</div>
+                <div className="flex flex-row pl-10 text-white"></div>
               )}
             </div>
           </Droppable>

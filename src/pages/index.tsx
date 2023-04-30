@@ -1,6 +1,14 @@
 import { type NextPage } from "next";
 import Head from "next/head";
-import { addDays, endOfDay, isSameDay, setHours, startOfDay, subDays } from "date-fns";
+import {
+  addDays,
+  endOfDay,
+  isSameDay,
+  min,
+  setHours,
+  startOfDay,
+  subDays,
+} from "date-fns";
 import { api, type RouterOutputs } from "~/utils/api";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -38,7 +46,11 @@ const Home: NextPage = () => {
   const [activeDragItem, setActiveDragItem] = useState<
     RouterOutputs["kanban"]["tasks"]["backlog"][number] | undefined
   >(undefined);
-  const [currentCalendarDate, setCurrentCalendarDate] = useState(startOfDay(new Date()));
+  // const [currentCalendarDates, setCurrentCalendarDates] = useState([
+  //   startOfDay(new Date()),
+  // ]);
+  const [currentCalendarDate, setCurrentCalendarDate] = useState(new Date());
+  const [visibleColumns, setVisibleColumns] = useState<Date[]>([]);
 
   const scrollableRef = useRef<any>(null);
   const [scrollPosition, setScrollPosition] = useState({ x: 0, y: 0 });
@@ -67,83 +79,68 @@ const Home: NextPage = () => {
     })
   );
 
-  useEffect(() => {
-    function calculateHorizontalScrollPercent(element: any) {
-      const { scrollWidth, clientWidth, scrollLeft } = element;
-      const maxScrollLeft = scrollWidth - clientWidth;
-      const percentScrolled = (scrollLeft / maxScrollLeft) * 100;
-      // round to 2 decimal places
-      return Math.round(percentScrolled * 100) / 100;
-    }
-
-    // write a function that calculates the leftmost visible item in a horizontal scrollable. the
-    // function should take the scrollable element, and the width of the items in the scrollable.
-    function calculateLeftmostVisibleItem(
-      element: any,
-      columnWidth: number,
-      padding: number
-    ) {
-      const { scrollLeft, scrollWidth } = element;
-
-      const numberOfItems = tasksQuery.data?.tasksByDate.length || 0;
-      const widthPerItem = document.querySelector(".DAY_COLUMN")?.clientWidth || 0;
-
-      // ex: if the scrollLeft is between 0 and 300, the leftmost visible item is index 0
-      // ex: if the scrollLeft is between 300 and 600, the leftmost visible item is index 1
-      // ex: if the scrollLeft is between 600 and 900, the leftmost visible item is index 2
-      const scrollPercent = scrollLeft / scrollWidth;
-
-      let leftmostVisibleIndex = Math.round((scrollLeft / scrollWidth) * numberOfItems);
-      console.info(leftmostVisibleIndex);
-
-      return leftmostVisibleIndex;
-    }
-
-    const handleScroll = (event: any) => {
-      if (!event.target) return;
-      if (!!activeDragItem) {
-        // prevent scrolling while dragging
-        event.target.scrollLeft = scrollPosition.x;
-        return;
-      }
-      const percent = calculateHorizontalScrollPercent(event.target);
-      if (percent < 10 || percent > 90) {
-        // console.info({
-        //   percent,
-        //   initialScroll: scrolledToInitialPosition,
-        // });
-      }
-
-      const leftMost = calculateLeftmostVisibleItem(event.target, 300, 0);
-      const day = tasksQuery.data?.tasksByDate.at(leftMost);
-      if (day && !isSameDay(day.date, currentCalendarDate)) {
-        console.info(`day = ${day.date}`);
-        console.info(`diff = ${day.date.getTime() - currentCalendarDate.getTime()}`);
-        setCurrentCalendarDate(day.date);
-      }
-      // // if percent < 0.1, fetch previous week
-      // if (percent < 0.1) {
-      //   setStartAt(subDays(startAt, 7));
-      //   return;
-      // }
-      // // if percent > 0.9, fetch next week
-      // if (percent > 0.9) {
-      //   setStartAt(addDays(startAt, 7));
-      //   return;
-      // }
-    };
-
-    const myElement = scrollableRef.current;
-    if (myElement) {
-      myElement.addEventListener("scroll", handleScroll);
-    }
-
-    return () => {
-      if (myElement) {
-        myElement.removeEventListener("scroll", handleScroll);
-      }
-    };
-  }, [scrollableRef, tasksQuery.data?.tasksByDate, activeDragItem]);
+  // useEffect(() => {
+  //   function calculateHorizontalScrollPercent(element: any) {
+  //     const { scrollWidth, clientWidth, scrollLeft } = element;
+  //     const maxScrollLeft = scrollWidth - clientWidth;
+  //     const percentScrolled = (scrollLeft / maxScrollLeft) * 100;
+  //     // round to 2 decimal places
+  //     return Math.round(percentScrolled * 100) / 100;
+  //   }
+  //
+  //   // write a function that calculates the leftmost visible item in a horizontal scrollable. the
+  //   // function should take the scrollable element, and the width of the items in the scrollable.
+  //   function calculateLeftmostVisibleItem(
+  //     element: any,
+  //     columnWidth: number,
+  //     padding: number
+  //   ) {
+  //     const { scrollLeft, scrollWidth } = element;
+  //
+  //     const numberOfItems = tasksQuery.data?.tasksByDate.length || 0;
+  //     const widthPerItem = document.querySelector(".DAY_COLUMN")?.clientWidth || 0;
+  //
+  //     // ex: if the scrollLeft is between 0 and 300, the leftmost visible item is index 0
+  //     // ex: if the scrollLeft is between 300 and 600, the leftmost visible item is index 1
+  //     // ex: if the scrollLeft is between 600 and 900, the leftmost visible item is index 2
+  //     const scrollPercent = scrollLeft / scrollWidth;
+  //
+  //     let leftmostVisibleIndex = Math.round((scrollLeft / scrollWidth) * numberOfItems);
+  //     console.info(leftmostVisibleIndex);
+  //
+  //     return leftmostVisibleIndex;
+  //   }
+  //
+  //   const handleScroll = (event: any) => {
+  //     if (!event.target) return;
+  //     if (!!activeDragItem) {
+  //       // prevent scrolling while dragging
+  //       event.target.scrollLeft = scrollPosition.x;
+  //       return;
+  //     }
+  //     const percent = calculateHorizontalScrollPercent(event.target);
+  //     if (percent < 10 || percent > 90) {
+  //     }
+  //
+  //     // const day = tasksQuery.data?.tasksByDate.at(leftMost);
+  //     // if (day && !isSameDay(day.date, currentCalendarDate)) {
+  //     //   // console.info(`day = ${day.date}`);
+  //     //   // console.info(`diff = ${day.date.getTime() - currentCalendarDate.getTime()}`);
+  //     //   setCurrentCalendarDate(day.date);
+  //     // }
+  //   };
+  //
+  //   const myElement = scrollableRef.current;
+  //   if (myElement) {
+  //     myElement.addEventListener("scroll", handleScroll);
+  //   }
+  //
+  //   return () => {
+  //     if (myElement) {
+  //       myElement.removeEventListener("scroll", handleScroll);
+  //     }
+  //   };
+  // }, [scrollableRef, tasksQuery.data?.tasksByDate, activeDragItem]);
   useEffect(() => {
     if (
       !!tasksQuery.data &&
@@ -236,7 +233,32 @@ const Home: NextPage = () => {
                 ref={scrollableRef}
               >
                 {tasksQuery.data?.tasksByDate.map((dt) => (
-                  <DayColumn key={dt.date.toISOString()} dt={dt} />
+                  <DayColumn
+                    key={dt.date.toISOString()}
+                    dt={dt}
+                    containerRef={scrollableRef}
+                    didBecomeVisible={() => {
+                      if (visibleColumns.includes(dt.date)) {
+                        return;
+                      }
+                      const newVisible = [...visibleColumns, dt.date];
+                      setVisibleColumns(newVisible);
+                      const minDate = min(newVisible);
+                      if (minDate) {
+                        setCurrentCalendarDate(minDate);
+                      }
+                    }}
+                    didBecomeInvisible={() => {
+                      const newVisible = visibleColumns.filter(
+                        (d) => !isSameDay(d, dt.date)
+                      );
+                      setVisibleColumns(newVisible);
+                      const minDate = min(newVisible);
+                      if (minDate) {
+                        setCurrentCalendarDate(minDate);
+                      }
+                    }}
+                  />
                 ))}
                 {/*<div className="DATE_TASKS flex h-full w-full">*/}
                 {/*  */}
@@ -422,25 +444,27 @@ const Home: NextPage = () => {
   }
   async function moveToDay(task: Task, date: Date, position: number) {
     // if the task is being moved from to a different day, we need to update the position and reset the scheduledFor
+    const differentDays = !isSameDay(task.date, date);
     const movingToDifferentDay =
-      !isSameDay(task.date, date) &&
+      differentDays &&
       // is not midnight
-      task.scheduledFor &&
+      task.scheduledFor !== null &&
       task.scheduledFor.getHours() !== 0;
-    await updatePositionMutation.mutateAsync(
-      {
+    const scheduledFor = movingToDifferentDay ? null : task.scheduledFor;
+    await updatePositionMutation
+      .mutateAsync({
         taskId: task.id,
         date: date,
         backlog: false,
         position: position,
-        scheduledFor: movingToDifferentDay ? date : task.scheduledFor,
-      },
-      {
-        onSuccess: async () => {
-          await tasksQuery.refetch();
-        },
-      }
-    );
+        scheduledFor: scheduledFor,
+      })
+      .then(async () => {
+        return await tasksQuery.refetch();
+      })
+      .catch((e) => {
+        console.error(e);
+      });
   }
   async function moveToHour(task: Task, hour: number, currentCalendarDate: Date) {
     const newDate = setHours(currentCalendarDate, hour);
@@ -459,7 +483,6 @@ const Home: NextPage = () => {
       }
     );
   }
-
   function onDragStart(event: DragStartEvent) {
     console.info("start");
     const item = getItemById(event.active.id as string, tasksQuery.data);
@@ -573,7 +596,6 @@ const Home: NextPage = () => {
     setActiveDragItem(undefined);
     await tasksQuery.refetch();
   }
-
   function getItemById(id: string, tasks: RouterOutputs["kanban"]["tasks"] | undefined) {
     let task = tasks?.backlog.find((t) => t.id === id);
     if (task) return task;
@@ -636,36 +658,6 @@ const Home: NextPage = () => {
   function getDirection(event: DragMoveEvent) {
     return event.delta.y > 0 ? "down" : "up";
   }
-  function isSameColumn(event: DragMoveEvent) {
-    if (!activeDragItem || !event.over?.data.current?.sortable) {
-      return false;
-    }
-    return (
-      event.active.data.current?.sortable.containerId ===
-      event.over?.data.current?.sortable.containerId
-    );
-  }
-  function getActive(event: DragMoveEvent) {
-    // if (!activeDragItem || !event.active?.data.current?.sortable) {
-    //   return false;
-    // }
-    return {
-      id: stripIdPrefix(event.active.id as string),
-      date: new Date(event.active.data.current?.sortable.containerId),
-      index: event.active.data.current?.sortable.index,
-      item: activeDragItem,
-      containerId: event.active?.data.current?.sortable.containerId,
-    };
-  }
-  function getOver(event: DragMoveEvent) {
-    return {
-      id: stripIdPrefix(event.over?.id as string),
-      date: new Date(event.over?.data.current?.sortable.containerId),
-      index: event.over?.data.current?.sortable.index,
-      item: getItemById(stripIdPrefix(event.over?.id as string), tasksQuery.data),
-      containerId: event.over?.data.current?.sortable.containerId,
-    };
-  }
   function getScrollPosition(element: any) {
     const { scrollLeft, scrollTop } = element;
     return { x: scrollLeft, y: scrollTop };
@@ -678,4 +670,8 @@ const time = (func: Function): void => {
   console.time(func.name); // start timer
   func(); // execute function
   console.timeEnd(func.name); // end timer
+};
+
+export const classNames = (...classes: string[]) => {
+  return classes.filter(Boolean).join(" ");
 };
