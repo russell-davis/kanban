@@ -141,40 +141,6 @@ export const appRouter = createTRPCRouter({
           },
         });
       }),
-    deleteTask: publicProcedure
-      .input(
-        z.object({
-          taskId: z.string(),
-        })
-      )
-      .mutation(async ({ input, ctx }) => {
-        return ctx.prisma.task
-          .delete({
-            where: {
-              id: input.taskId,
-            },
-          })
-          .then((t) => {
-            console.info("deleted task", t);
-            return t;
-          })
-          .catch((e) => {
-            console.error("error deleting task", e);
-            throw e;
-          });
-      }),
-    toggleCompleted: publicProcedure
-      .input(z.object({ taskId: z.string(), completed: z.boolean() }))
-      .mutation(async ({ input, ctx }) => {
-        return ctx.prisma.task.update({
-          where: {
-            id: input.taskId,
-          },
-          data: {
-            completed: input.completed,
-          },
-        });
-      }),
   }),
   task: createTRPCRouter({
     logTime: publicProcedure
@@ -197,6 +163,40 @@ export const appRouter = createTRPCRouter({
             },
           },
         });
+      }),
+    toggleCompleted: publicProcedure
+      .input(z.object({ taskId: z.string(), completed: z.boolean() }))
+      .mutation(async ({ input, ctx }) => {
+        return ctx.prisma.task.update({
+          where: {
+            id: input.taskId,
+          },
+          data: {
+            completed: input.completed,
+          },
+        });
+      }),
+    delete: publicProcedure
+      .input(
+        z.object({
+          taskId: z.string(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        return ctx.prisma.task
+          .delete({
+            where: {
+              id: input.taskId,
+            },
+          })
+          .then((t) => {
+            console.info("deleted task", t);
+            return t;
+          })
+          .catch((e) => {
+            console.error("error deleting task", e);
+            throw e;
+          });
       }),
   }),
 });

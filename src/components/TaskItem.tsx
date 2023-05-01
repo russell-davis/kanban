@@ -8,8 +8,8 @@ export const TaskItem = (props: {
   task: RouterOutputs["kanban"]["tasks"]["tasksByDate"][number]["tasks"][number];
 }) => {
   const utils = api.useContext();
-  const deleteTaskMutation = api.kanban.deleteTask.useMutation();
-  const toggleComplete = api.kanban.toggleCompleted.useMutation();
+  const deleteTaskMutation = api.task.delete.useMutation();
+  const toggleComplete = api.task.toggleCompleted.useMutation();
 
   return (
     <div
