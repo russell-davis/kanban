@@ -20,7 +20,7 @@ export const Backlog = (props: {
   const createTaskMutation = api.kanban.create.useMutation();
 
   return (
-    <div className="BACKLOG flex min-w-[300px] flex-col bg-gray-800">
+    <div className="BACKLOG flex min-w-[300px] max-w-[300px] flex-col bg-gray-800">
       <div className="TITLE flex flex-row justify-between p-2">
         <Text size={"lg"} weight={500} color={"white"}>
           Backlog
