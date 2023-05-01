@@ -1,7 +1,8 @@
 import { FC, useState } from "react";
 import { ActionIcon, Card, Group, Stack, Text } from "@mantine/core";
 import { useDraggable } from "@dnd-kit/core";
-import { classNames, DRAGABLES } from "~/pages";
+import { DRAGABLES } from "~/pages";
+import { classNames } from "~/lib/classNames";
 import { IconCalendar, IconCircleCheck, IconClock } from "@tabler/icons-react";
 import { Timer } from "~/components/task/Timer";
 import { DatePicker } from "@mantine/dates";

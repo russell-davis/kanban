@@ -40,7 +40,10 @@ const Library: NextPage = () => {
         {tasks.data?.tasksByDate
           .flatMap((tasksByDate) => tasksByDate.tasks)
           .map((task) => (
-            <TaskCard key={task.id} task={task} />
+            <TaskCard key={task.id} task={task} dateRange={{
+              startAt: taskDates.start,
+              endAt: taskDates.end,
+            }} />
           ))}
       </div>
     </div>

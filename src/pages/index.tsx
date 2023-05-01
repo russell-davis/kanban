@@ -46,9 +46,6 @@ const Home: NextPage = () => {
   const [activeDragItem, setActiveDragItem] = useState<
     RouterOutputs["kanban"]["tasks"]["backlog"][number] | undefined
   >(undefined);
-  // const [currentCalendarDates, setCurrentCalendarDates] = useState([
-  //   startOfDay(new Date()),
-  // ]);
   const [currentCalendarDate, setCurrentCalendarDate] = useState(new Date());
   const [visibleColumns, setVisibleColumns] = useState<Date[]>([]);
 
@@ -672,13 +669,3 @@ const Home: NextPage = () => {
 };
 
 export default Home;
-
-const time = (func: any): void => {
-  console.time(func.name); // start timer
-  func(); // execute function
-  console.timeEnd(func.name); // end timer
-};
-
-export const classNames = (...classes: string[]) => {
-  return classes.filter(Boolean).join(" ");
-};

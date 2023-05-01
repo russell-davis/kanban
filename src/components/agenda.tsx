@@ -3,10 +3,11 @@ import { Sortable } from "~/components/Sortable";
 import React, { FC } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { DRAGABLES } from "~/pages";
+import { TaskData } from "~/server/api/root";
 
 export const Agenda = (props: {
   currentCalendarDate: Date;
-  items: { hour: number; id: number; tasks: TaskCard[] }[];
+  items: { hour: number; id: number; tasks: TaskData[] }[];
 }) => (
   <div className="CALENDAR min-w-[300px] overflow-y-scroll bg-gray-800">
     <div className="flex grow flex-col p-2">
