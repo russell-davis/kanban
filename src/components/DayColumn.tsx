@@ -75,7 +75,12 @@ export const DayColumn = (props: {
                   return 0;
                 })
                 .map((task) => (
-                  <TaskCard key={task.id} task={task} dateRange={props.dateRange} />
+                  <Sortable id={task.id} data={task} key={task.id} type={DRAGABLES.TASK}>
+                    <TaskCard task={task} dateRange={props.dateRange} />
+                  </Sortable>
+                  // <Sortable id={task.id} data={task} key={task.id} type={DRAGABLES.TASK}>
+                  //   <TaskItem task={task} />
+                  // </Sortable>
                 ))}
               {props.dt.tasks.length === 0 && (
                 <Sortable

@@ -1,7 +1,5 @@
 import { FC, useState } from "react";
 import { ActionIcon, Card, Group, Stack, Text } from "@mantine/core";
-import { useDraggable } from "@dnd-kit/core";
-import { DRAGABLES } from "~/pages";
 import { classNames } from "~/lib/classNames";
 import { IconCalendar, IconCircleCheck, IconClock } from "@tabler/icons-react";
 import { Timer } from "~/components/task/Timer";
@@ -67,13 +65,6 @@ export const TaskCard: FC<{
       console.info("toggled completed task and invalidated");
     },
   });
-  const { setNodeRef, attributes, listeners } = useDraggable({
-    id: task.id,
-    data: {
-      type: DRAGABLES.TASK,
-      task: task,
-    },
-  });
   const [datePickerOpen, setDatePickerOpen] = useState<boolean>(false);
   const [datePickerDate, setDatePickerDate] = useState<Date | null>(task.date);
   const [timerOpen, setTimerOpen] = useState<boolean>(false);
@@ -96,15 +87,7 @@ export const TaskCard: FC<{
   );
 
   return (
-    <Card
-      ref={setNodeRef}
-      {...attributes}
-      {...listeners}
-      shadow="sm"
-      padding="lg"
-      radius="md"
-      withBorder
-    >
+    <Card shadow="sm" padding="lg" radius="md" withBorder>
       <Card.Section p={8}>
         <Stack spacing={2}>
           <Group position={"apart"}>
