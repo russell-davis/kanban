@@ -29,9 +29,9 @@ import {
 } from "@dnd-kit/core";
 import { coordinateGetter } from "~/components/dndkit/multipleContainersKeyboardCoordinates";
 import { DayColumn } from "~/components/DayColumn";
-import { type Task } from "@prisma/client";
 import { Backlog } from "~/components/backlog";
 import { Agenda } from "~/components/agenda";
+import { TaskData } from "~/server/api/root";
 
 export const DRAGABLES = {
   CALENDAR: "calendar",
@@ -282,7 +282,7 @@ const Home: NextPage = () => {
     </>
   );
 
-  function shadowMoveToBacklog(task: Task) {
+  function shadowMoveToBacklog(task: TaskData) {
     let list = utils.kanban.tasks.getData({
       startAt: startAt,
       endAt: endAt,
@@ -323,7 +323,7 @@ const Home: NextPage = () => {
       list
     );
   }
-  function shadowMoveToDay(task: Task, date: Date, position: number) {
+  function shadowMoveToDay(task: TaskData, date: Date, position: number) {
     let list = utils.kanban.tasks.getData({
       startAt: startAt,
       endAt: endAt,
@@ -378,7 +378,7 @@ const Home: NextPage = () => {
       list
     );
   }
-  function shadowMoveToHour(task: Task, hour: number, currentCalendarDate: Date) {
+  function shadowMoveToHour(task: TaskData, hour: number, currentCalendarDate: Date) {
     const newDate = setHours(currentCalendarDate, hour);
     let list = utils.kanban.tasks.getData({
       startAt: startAt,
@@ -426,7 +426,7 @@ const Home: NextPage = () => {
       list
     );
   }
-  async function moveToBacklog(task: Task) {
+  async function moveToBacklog(task: TaskData) {
     await updatePositionMutation.mutateAsync(
       {
         taskId: task.id,
@@ -442,7 +442,7 @@ const Home: NextPage = () => {
       }
     );
   }
-  async function moveToDay(task: Task, date: Date, position: number) {
+  async function moveToDay(task: TaskData, date: Date, position: number) {
     // if the task is being moved from to a different day, we need to update the position and reset the scheduledFor
     const differentDays = !isSameDay(task.date, date);
     const movingToDifferentDay =
@@ -466,7 +466,7 @@ const Home: NextPage = () => {
         console.error(e);
       });
   }
-  async function moveToHour(task: Task, hour: number, currentCalendarDate: Date) {
+  async function moveToHour(task: TaskData, hour: number, currentCalendarDate: Date) {
     const newDate = setHours(currentCalendarDate, hour);
     await updatePositionMutation.mutateAsync(
       {

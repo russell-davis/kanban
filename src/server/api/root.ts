@@ -1,6 +1,7 @@
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import { z } from "zod";
 import { isSameDay, startOfDay } from "date-fns";
+import { RouterOutputs } from "~/utils/api";
 
 /**
  * This is the primary router for your server.
@@ -70,6 +71,7 @@ export const appRouter = createTRPCRouter({
                 id: "asc",
               },
             },
+            timeEntries: true,
           },
         });
         console.info("tasks", tasks.length);
@@ -174,6 +176,29 @@ export const appRouter = createTRPCRouter({
         });
       }),
   }),
+  task: createTRPCRouter({
+    logTime: publicProcedure
+      .input(
+        z.object({
+          taskId: z.string(),
+          time: z.number(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        return ctx.prisma.task.update({
+          where: {
+            id: input.taskId,
+          },
+          data: {
+            timeEntries: {
+              create: {
+                seconds: input.time,
+              },
+            },
+          },
+        });
+      }),
+  }),
 });
 
 // export type definition of API
@@ -198,3 +223,5 @@ function getDateList(start: Date, end: Date): Date[] {
   // Return the list of dates
   return dateList;
 }
+
+export type TaskData = RouterOutputs["kanban"]["tasks"]["backlog"][number];

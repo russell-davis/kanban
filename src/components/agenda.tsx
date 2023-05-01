@@ -1,4 +1,3 @@
-import { Task } from "@prisma/client";
 import { Text } from "@mantine/core";
 import { Sortable } from "~/components/Sortable";
 import React, { FC } from "react";
@@ -7,7 +6,7 @@ import { DRAGABLES } from "~/pages";
 
 export const Agenda = (props: {
   currentCalendarDate: Date;
-  items: { hour: number; id: number; tasks: Task[] }[];
+  items: { hour: number; id: number; tasks: TaskCard[] }[];
 }) => (
   <div className="CALENDAR min-w-[300px] overflow-y-scroll bg-gray-800">
     <div className="flex grow flex-col p-2">

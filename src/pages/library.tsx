@@ -2,9 +2,23 @@ import { NextPage } from "next";
 import { TaskCard } from "~/components/task/TaskCard";
 import { IconMoonStars, IconSun } from "@tabler/icons-react";
 import { ActionIcon, useMantineColorScheme } from "@mantine/core";
+import { api } from "~/utils/api";
+import { addWeeks, subWeeks } from "date-fns";
+import { useState } from "react";
 
 const Library: NextPage = () => {
   const { colorScheme, toggleColorScheme } = useMantineColorScheme();
+  const [taskDates, setTaskDates] = useState<{
+    start: Date;
+    end: Date;
+  }>({
+    start: subWeeks(new Date(), 1),
+    end: addWeeks(new Date(), 1),
+  });
+  const tasks = api.kanban.tasks.useQuery({
+    startAt: taskDates.start,
+    endAt: taskDates.end,
+  });
   return (
     <div className="h-screen w-full">
       <div className="flex items-center justify-between p-4">
@@ -22,23 +36,12 @@ const Library: NextPage = () => {
           )}
         </ActionIcon>
       </div>
-      <div className="flex flex-col space-y-2 p-4">
-        <div className="h-96 w-[300px]">
-          <TaskCard
-            task={{
-              id: "1",
-              title: "Do a thing to the thing; then do another thing to the thing",
-              completed: false,
-              createdAt: new Date(),
-              updatedAt: new Date(),
-              backlog: false,
-              position: 1,
-              scheduledFor: new Date(),
-              date: new Date(),
-              subtasks: [],
-            }}
-          />
-        </div>
+      <div className="flex h-96 w-[300px] flex-col space-y-2 space-y-2 p-4">
+        {tasks.data?.tasksByDate
+          .flatMap((tasksByDate) => tasksByDate.tasks)
+          .map((task) => (
+            <TaskCard key={task.id} task={task} />
+          ))}
       </div>
     </div>
   );
