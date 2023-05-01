@@ -2,17 +2,18 @@ import type { RouterOutputs } from "~/utils/api";
 import { Text } from "@mantine/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Sortable } from "~/components/Sortable";
-import { TaskItem } from "~/components/TaskItem";
 import { isSameDay } from "date-fns";
 import { classNames, DRAGABLES } from "~/pages";
 import { useIntersection } from "@mantine/hooks";
 import { useEffect } from "react";
+import { TaskCard } from "~/components/task/TaskCard";
 
 export const DayColumn = (props: {
   dt: RouterOutputs["kanban"]["tasks"]["tasksByDate"][number];
   containerRef: { current: any };
   didBecomeVisible: () => void;
   didBecomeInvisible: () => void;
+  dateRange: { startAt: Date; endAt: Date };
 }) => {
   const { ref, entry } = useIntersection({
     root: props.containerRef.current,
@@ -73,9 +74,7 @@ export const DayColumn = (props: {
                   return 0;
                 })
                 .map((task) => (
-                  <Sortable id={task.id} data={task} key={task.id} type={DRAGABLES.TASK}>
-                    <TaskItem key={task.id} task={task} />
-                  </Sortable>
+                  <TaskCard key={task.id} task={task} dateRange={props.dateRange} />
                 ))}
               {props.dt.tasks.length === 0 && (
                 <Sortable

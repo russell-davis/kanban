@@ -5,12 +5,13 @@ import { startOfDay } from "date-fns";
 import { IconCheck } from "@tabler/icons-react";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Sortable } from "~/components/Sortable";
-import { TaskItem } from "~/components/TaskItem";
 import { DRAGABLES } from "~/pages";
+import { TaskCard } from "~/components/task/TaskCard";
 
 export const Backlog = (props: {
   goToTodayClicked: () => void;
   tasksQueryData?: RouterOutputs["kanban"]["tasks"];
+  dateRange: { startAt: Date; endAt: Date };
 }) => {
   // newTitle state
   const [newTitle, setNewTitle] = useState("");
@@ -69,9 +70,7 @@ export const Backlog = (props: {
             strategy={verticalListSortingStrategy}
           >
             {props.tasksQueryData?.backlog.map((task) => (
-              <Sortable id={task.id} key={task.id} data={task} type={DRAGABLES.BACKLOG}>
-                <TaskItem key={task.id} task={task} />
-              </Sortable>
+              <TaskCard key={task.id} task={task} dateRange={props.dateRange} />
             ))}
 
             {props.tasksQueryData?.backlog.length === 0 && (

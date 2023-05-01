@@ -67,10 +67,18 @@ export const TaskCard: FC<{
               >
                 <IconCircleCheck stroke={0.7} />
               </ActionIcon>
-              <ActionIcon title={"reschedule"}>
+              <ActionIcon
+                title={"reschedule"}
+                color={datePickerOpen ? "blue" : "gray"}
+                onClick={() => setDatePickerOpen(!datePickerOpen)}
+              >
                 <IconCalendar stroke={0.7} size={20} />
               </ActionIcon>
-              <ActionIcon title={"timer"}>
+              <ActionIcon
+                title={"timer"}
+                color={timerOpen ? "blue" : "gray"}
+                onClick={() => setTimerOpen(!timerOpen)}
+              >
                 <IconClock stroke={0.7} size={20} />
               </ActionIcon>
             </Group>
