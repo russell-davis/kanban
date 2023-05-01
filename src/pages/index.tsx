@@ -32,6 +32,7 @@ import { DayColumn } from "~/components/DayColumn";
 import { Backlog } from "~/components/backlog";
 import { Agenda } from "~/components/agenda";
 import { TaskData } from "~/server/api/root";
+import { useDebouncedValue } from "@mantine/hooks";
 
 export const DRAGABLES = {
   CALENDAR: "calendar",
@@ -47,6 +48,7 @@ const Home: NextPage = () => {
     RouterOutputs["kanban"]["tasks"]["backlog"][number] | undefined
   >(undefined);
   const [currentCalendarDate, setCurrentCalendarDate] = useState(new Date());
+  const [debouncedDate, setDebouncedDate] = useDebouncedValue(currentCalendarDate, 500);
   const [visibleColumns, setVisibleColumns] = useState<Date[]>([]);
 
   const scrollableRef = useRef<any>(null);
@@ -169,7 +171,7 @@ const Home: NextPage = () => {
       return [];
     }
     const todayColumn = tasksQuery.data.tasksByDate.find((dt) =>
-      isSameDay(dt.date, currentCalendarDate)
+      isSameDay(dt.date, debouncedDate)
     );
     if (!todayColumn) {
       return [];
@@ -177,6 +179,7 @@ const Home: NextPage = () => {
     const scheduledTasks = todayColumn.tasks.filter((t) => {
       return t.scheduledFor !== null;
     });
+    console.info(`scheduledTasks = ${scheduledTasks.length}`);
 
     // create an ordered array of { hour, tasks } objects even if the hour has no tasks. this will be used to render the calendar
     const hours = Array.from({ length: 24 }, (_, i) => i).map((hour) => {
@@ -189,7 +192,7 @@ const Home: NextPage = () => {
     });
 
     return hours;
-  }, [tasksQuery.data?.tasksByDate, currentCalendarDate]);
+  }, [tasksQuery.data?.tasksByDate, debouncedDate]);
 
   return (
     <>
@@ -264,9 +267,6 @@ const Home: NextPage = () => {
                     }}
                   />
                 ))}
-                {/*<div className="DATE_TASKS flex h-full w-full">*/}
-                {/*  */}
-                {/*</div>*/}
               </div>
               <Agenda items={calendarTasks} currentCalendarDate={currentCalendarDate} />
             </div>
