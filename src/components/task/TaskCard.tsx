@@ -53,7 +53,18 @@ export const TaskCard: FC<{
           ) : null}
           <Group position="apart" align={"center"}>
             <Group spacing={0}>
-              <ActionIcon title={"complete"}>
+              <ActionIcon
+                title={"complete"}
+                className={classNames(
+                  task.completed ? "text-green-500" : "text-gray-500"
+                )}
+                onClick={async () => {
+                  completeTask.mutate({
+                    taskId: task.id,
+                    completed: !task.completed,
+                  });
+                }}
+              >
                 <IconCircleCheck stroke={0.7} />
               </ActionIcon>
               <ActionIcon title={"reschedule"}>

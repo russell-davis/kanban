@@ -200,7 +200,6 @@ const Home: NextPage = () => {
         <title>Kanban!</title>
       </Head>
       <main className="flex h-screen flex-col bg-gray-900">
-        <div className="flex flex-col-reverse px-2 text-white"></div>
         <div className="py-18 flex flex-1">
           <DndContext
             onDragStart={onDragStart}
@@ -224,6 +223,10 @@ const Home: NextPage = () => {
                   scrollToToday();
                 }}
                 tasksQueryData={tasksQuery.data}
+                dateRange={{
+                  startAt,
+                  endAt,
+                }}
               />
 
               <div
@@ -237,6 +240,10 @@ const Home: NextPage = () => {
                     key={dt.date.toISOString()}
                     dt={dt}
                     containerRef={scrollableRef}
+                    dateRange={{
+                      startAt,
+                      endAt,
+                    }}
                     didBecomeVisible={() => {
                       if (visibleColumns.includes(dt.date)) {
                         return;
