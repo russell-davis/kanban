@@ -12,6 +12,7 @@ import { TaskCard } from "~/components/task/TaskCard";
 export const DayColumn = (props: {
   dt: RouterOutputs["kanban"]["tasks"]["tasksByDate"][number];
   containerRef: { current: any };
+  isCurrentCalendarDate: boolean;
   didBecomeVisible: () => void;
   didBecomeInvisible: () => void;
   dateRange: { startAt: Date; endAt: Date };
@@ -38,7 +39,7 @@ export const DayColumn = (props: {
       )}`}
     >
       <div className={`DATE_TASK_LIST flex w-full flex-col space-y-3 p-1`}>
-        <div className={`${isToday ? "rounded border border-white  pl-2" : ""} p-1`}>
+        <div className={classNames(`p-1`, isToday ? "font-black underline" : "")}>
           <Text size={"md"} weight={500} color={"white"}>
             {props.dt.date.toLocaleDateString("en-US", {
               dateStyle: "medium",
@@ -54,7 +55,8 @@ export const DayColumn = (props: {
             <div
               className={`flex h-full shrink flex-col space-y-2 rounded-lg p-2 ${classNames(
                 // entry?.isIntersecting ? "bg-green-400" :
-                "bg-gray-700"
+                "bg-gray-700",
+                props.isCurrentCalendarDate ? "rounded-lg border" : ""
               )}`}
             >
               {props.dt.tasks

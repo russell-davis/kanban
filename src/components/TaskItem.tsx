@@ -25,6 +25,7 @@ export const TaskItem = (props: {
           disabled={toggleComplete.isLoading}
           onClick={(e) => {
             e.preventDefault();
+            e.stopPropagation();
             toggleComplete.mutate(
               {
                 taskId: props.task.id,
@@ -55,7 +56,7 @@ export const TaskItem = (props: {
       <div className="flex flex-row">
         <ActionIcon
           onClick={(e) => {
-            e.preventDefault();
+            e.stopPropagation();
             console.info("Edit task");
             modals.open({
               modalId: "edit-task",
@@ -83,7 +84,7 @@ export const TaskItem = (props: {
                       loading={toggleComplete.isLoading}
                       disabled={toggleComplete.isLoading}
                       onClick={(e) => {
-                        e.preventDefault();
+                        e.stopPropagation();
                         toggleComplete.mutate(
                           {
                             taskId: props.task.id,
@@ -122,7 +123,6 @@ export const TaskItem = (props: {
           disabled={deleteTaskMutation.isLoading}
           onClick={(e) => {
             e.stopPropagation();
-            e.preventDefault();
             deleteTaskMutation.mutate(
               {
                 taskId: props.task.id,

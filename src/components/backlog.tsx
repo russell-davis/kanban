@@ -20,6 +20,22 @@ export const Backlog = (props: {
   const utils = api.useContext();
   const createTaskMutation = api.kanban.create.useMutation();
 
+  const orderedTasks =
+    props.tasksQueryData?.backlog === undefined
+      ? []
+      : props.tasksQueryData?.backlog.sort((a, b) => {
+          // order by incomplete before completed, then by updatedAt
+          if (a.completed === b.completed) {
+            if (a.updatedAt === b.updatedAt) {
+              return 0;
+            } else {
+              return a.updatedAt > b.updatedAt ? 1 : -1;
+            }
+          } else {
+            return a.completed ? 1 : -1;
+          }
+        });
+
   return (
     <div className="BACKLOG flex min-w-[300px] max-w-[300px] flex-col bg-gray-800">
       <div className="TITLE flex flex-row justify-between p-2">
@@ -69,11 +85,11 @@ export const Backlog = (props: {
             id={"backlog"}
             strategy={verticalListSortingStrategy}
           >
-            {props.tasksQueryData?.backlog.map((task) => (
+            {orderedTasks.map((task) => (
               <TaskCard key={task.id} task={task} dateRange={props.dateRange} />
             ))}
 
-            {props.tasksQueryData?.backlog.length === 0 && (
+            {orderedTasks.length === 0 && (
               <Sortable id={"backlog"} data={{}} type={DRAGABLES.BACKLOG}>
                 {" "}
               </Sortable>

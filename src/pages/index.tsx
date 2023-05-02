@@ -199,8 +199,9 @@ const Home: NextPage = () => {
       <Head>
         <title>Kanban!</title>
       </Head>
-      <main className="flex h-screen flex-col bg-gray-900">
-        <div className="py-18 flex flex-1">
+      <main className="flex h-screen max-h-screen flex-col bg-gray-900">
+        <div className="flex h-full flex-1">test</div>
+        <div className="py-18 flex h-full flex-1">
           <DndContext
             onDragStart={onDragStart}
             onDragOver={onDragOver}
@@ -216,7 +217,7 @@ const Home: NextPage = () => {
           >
             <div
               id="task-list"
-              className="flex h-screen flex-row space-x-2 overflow-x-hidden rounded-lg px-2 py-2"
+              className="flex flex-row space-x-2 overflow-x-hidden rounded-lg px-2 py-2"
             >
               <Backlog
                 goToTodayClicked={() => {
@@ -239,6 +240,7 @@ const Home: NextPage = () => {
                   <DayColumn
                     key={dt.date.toISOString()}
                     dt={dt}
+                    isCurrentCalendarDate={isSameDay(dt.date, currentCalendarDate)}
                     containerRef={scrollableRef}
                     dateRange={{
                       startAt,
