@@ -65,6 +65,53 @@ export const TaskCard: FC<{
       console.info("toggled completed task and invalidated");
     },
   });
+  const moveTaskItem = api.kanban.updatePosition.useMutation({
+    onMutate: async ({ taskId, position }) => {
+      // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
+      await utils.kanban.tasks.cancel();
+
+      // Snapshot the previous value
+      const previous = utils.kanban.tasks.getData(dateRange);
+      console.info(`previous: ${previous?.tasksByDate.length}`);
+
+      // Optimistically update to the new value
+      utils.kanban.tasks.setData(dateRange, (td) => {
+        if (!td) return td;
+        return {
+          ...td,
+          tasksByDate: td.tasksByDate.map((tbd) => {
+            if (!isSameDay(tbd.date, task.date)) return tbd;
+            return {
+              ...tbd,
+              tasks: tbd.tasks.map((t) => {
+                if (t.id !== taskId) return t;
+                return {
+                  ...t,
+                  position: position,
+                };
+              }),
+            };
+          }),
+          backlog: td.backlog.map((t) => {
+            if (t.id !== taskId) return t;
+            return {
+              ...t,
+              position: position,
+            };
+          }),
+        };
+      });
+
+      // Return a context object with the snapshotted value
+      return { previous };
+    },
+    onError: (err, variables, context) => {
+      utils.kanban.tasks.setData(dateRange, context?.previous);
+    },
+    onSettled: async () => {
+      await utils.kanban.tasks.invalidate(dateRange);
+    }
+  })
   const [datePickerOpen, setDatePickerOpen] = useState<boolean>(false);
   const [datePickerDate, setDatePickerDate] = useState<Date | null>(task.date);
   const [timerOpen, setTimerOpen] = useState<boolean>(false);
@@ -164,9 +211,12 @@ export const TaskCard: FC<{
             />
           )}
           {datePickerOpen && (
-            <Group position="center">
-              <DatePicker value={datePickerDate} onChange={setDatePickerDate} />
-            </Group>
+            <div className={classNames(
+              "flex flex-col items-center"
+            )}>
+              <DatePicker value={datePickerDate} onChange={setDatePickerDate}
+              />
+            </div>
           )}
         </Stack>
       </Card.Section>
