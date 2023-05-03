@@ -1,16 +1,8 @@
 import { type NextPage } from "next";
 import Head from "next/head";
-import {
-  addDays,
-  endOfDay,
-  isSameDay,
-  min,
-  setHours,
-  startOfDay,
-  subDays,
-} from "date-fns";
+import { addDays, endOfDay, isSameDay, setHours, startOfDay, subDays } from "date-fns";
 import { api, type RouterOutputs } from "~/utils/api";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   closestCenter,
   DndContext,
@@ -28,11 +20,11 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { coordinateGetter } from "~/components/dndkit/multipleContainersKeyboardCoordinates";
-import { DayColumn } from "~/components/DayColumn";
-import { Backlog } from "~/components/backlog";
 import { Agenda } from "~/components/agenda";
 import { TaskData } from "~/server/api/root";
 import { useDebouncedValue } from "@mantine/hooks";
+import { KanbanBoard } from "~/components/KanbanBoard";
+import { Backlog } from "~/components/backlog";
 
 export const DRAGABLES = {
   CALENDAR: "calendar",
@@ -49,9 +41,7 @@ const Home: NextPage = () => {
   >(undefined);
   const [currentCalendarDate, setCurrentCalendarDate] = useState(new Date());
   const [debouncedDate, setDebouncedDate] = useDebouncedValue(currentCalendarDate, 500);
-  const [visibleColumns, setVisibleColumns] = useState<Date[]>([]);
 
-  const scrollableRef = useRef<any>(null);
   const [scrollPosition, setScrollPosition] = useState({ x: 0, y: 0 });
   const [scrolledToInitialPosition, setScrolledToInitialPosition] = useState(false);
   const scrollToToday = () => setScrolledToInitialPosition(false);
@@ -200,7 +190,7 @@ const Home: NextPage = () => {
         <title>Kanban!</title>
       </Head>
       <main className="flex h-screen max-h-screen flex-col bg-gray-900">
-        <div className="flex h-full flex-1">test</div>
+        <div className="flex h-12">test</div>
         <div className="py-18 flex h-full flex-1">
           <DndContext
             onDragStart={onDragStart}
@@ -230,48 +220,19 @@ const Home: NextPage = () => {
                 }}
               />
 
-              <div
-                className={`DAYS flex h-full w-full grow
-                ${activeDragItem ? "scroll- overflow-x-hidden" : "overflow-x-scroll"}
-                `}
-                ref={scrollableRef}
-              >
-                {tasksQuery.data?.tasksByDate.map((dt) => (
-                  <DayColumn
-                    key={dt.date.toISOString()}
-                    dt={dt}
-                    isCurrentCalendarDate={isSameDay(dt.date, currentCalendarDate)}
-                    containerRef={scrollableRef}
-                    dateRange={{
-                      startAt,
-                      endAt,
-                    }}
-                    didBecomeVisible={() => {
-                      if (visibleColumns.includes(dt.date)) {
-                        return;
-                      }
-                      const newVisible = [...visibleColumns, dt.date];
-                      setVisibleColumns(newVisible);
-                      const minDate = min(newVisible);
-                      if (minDate) {
-                        setCurrentCalendarDate(minDate);
-                      }
-                    }}
-                    didBecomeInvisible={() => {
-                      const newVisible = visibleColumns.filter(
-                        (d) => !isSameDay(d, dt.date)
-                      );
-                      setVisibleColumns(newVisible);
-                      const minDate = min(newVisible);
-                      if (minDate) {
-                        setCurrentCalendarDate(minDate);
-                      }
-                    }}
-                  />
-                ))}
-              </div>
+              <KanbanBoard
+                currentCalendarDate={currentCalendarDate}
+                setCurrentCalendarDate={setCurrentCalendarDate}
+                activeDragItem={activeDragItem}
+                tasks={tasksQuery.data}
+                range={{
+                  startAt,
+                  endAt,
+                }}
+              />
               <Agenda items={calendarTasks} currentCalendarDate={currentCalendarDate} />
             </div>
+
             <DragOverlay>
               {activeDragItem ? (
                 <div
@@ -493,8 +454,8 @@ const Home: NextPage = () => {
     console.info("start");
     const item = getItemById(event.active.id as string, tasksQuery.data);
     setActiveDragItem(item);
-    const scrollPosition = getScrollPosition(scrollableRef.current);
-    setScrollPosition(scrollPosition);
+    // const scrollPosition = getScrollPosition(scrollableRef.current);
+    // setScrollPosition(scrollPosition);
   }
   function onDragOver(event: DragOverEvent) {
     const o = event.over?.data.current;

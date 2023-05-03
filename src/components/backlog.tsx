@@ -81,12 +81,14 @@ export const Backlog = (props: {
       <div className="BACKLOG_LIST flex flex-col overflow-y-auto">
         <div className="flex grow flex-col space-y-2 p-2">
           <SortableContext
-            items={props.tasksQueryData?.backlog ?? []}
+            items={orderedTasks}
             id={"backlog"}
             strategy={verticalListSortingStrategy}
           >
             {orderedTasks.map((task) => (
-              <TaskCard key={task.id} task={task} dateRange={props.dateRange} />
+              <Sortable key={task.id} id={task.id} data={task} type={DRAGABLES.BACKLOG}>
+                <TaskCard key={task.id} task={task} dateRange={props.dateRange} />
+              </Sortable>
             ))}
 
             {orderedTasks.length === 0 && (

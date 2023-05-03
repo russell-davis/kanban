@@ -34,9 +34,10 @@ export const DayColumn = (props: {
   return (
     <div
       ref={ref}
-      className={`DAY_COLUMN flex h-full min-w-[300px] flex-1 p-2 ${classNames(
+      className={classNames(
+        `DAY_COLUMN flex h-full min-w-[300px] flex-1 p-2`,
         isToday ? "is_today_column" : ""
-      )}`}
+      )}
     >
       <div className={`DATE_TASK_LIST flex w-full flex-col space-y-3 p-1`}>
         <div className={classNames(`p-1`, isToday ? "font-black underline" : "")}>

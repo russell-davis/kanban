@@ -128,7 +128,6 @@ export const TaskCard: FC<{
     (acc, timeEntry) => acc + timeEntry.seconds,
     0
   );
-
   const totalTimeInHoursAndMinutes = intervalToDuration({
     start: new Date(0),
     end: new Date(totalTimeEntrySeconds * 1000),
@@ -216,8 +215,8 @@ export const TaskCard: FC<{
     });
 
   return (
-    <Card shadow="sm" padding="lg" radius="md" withBorder>
-      <Card.Section p={8}>
+    <Card withBorder shadow="sm" radius="md">
+      <Card.Section withBorder inheritPadding p={8}>
         <Stack spacing={2}>
           <Group position={"apart"}>
             <Stack spacing={0}>
