@@ -27,8 +27,10 @@ export const KanbanBoard = (props: {
   return (
     <div
       className={classNames(
-        `DAYS flex h-full w-full grow`,
-        activeDragItem ? "scroll- overflow-x-hidden" : "overflow-x-scroll"
+        `DAYS h-full`,
+        activeDragItem ? "scroll- overflow-x-hidden" : "overflow-x-scroll",
+        // "flex h-full w-full grow"
+        "flex flex-row"
       )}
       ref={scrollableRef}
     >

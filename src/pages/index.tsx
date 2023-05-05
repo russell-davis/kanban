@@ -20,11 +20,14 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { coordinateGetter } from "~/components/dndkit/multipleContainersKeyboardCoordinates";
-import { Agenda } from "~/components/agenda";
 import { TaskData } from "~/server/api/root";
 import { useDebouncedValue } from "@mantine/hooks";
-import { KanbanBoard } from "~/components/KanbanBoard";
 import { Backlog } from "~/components/backlog";
+import { Agenda } from "~/components/agenda";
+import { KanbanBoard } from "~/components/KanbanBoard";
+import { classNames } from "~/lib/classNames";
+import { ActionIcon, Divider, Group, Text, useMantineColorScheme } from "@mantine/core";
+import { IconMoonStars, IconSun } from "@tabler/icons-react";
 
 export const DRAGABLES = {
   CALENDAR: "calendar",
@@ -34,6 +37,7 @@ export const DRAGABLES = {
 };
 
 const Home: NextPage = () => {
+  const colorScheme = useMantineColorScheme();
   const [startAt, setStartAt] = useState(subDays(startOfDay(new Date()), 3));
   const [endAt, setEndAt] = useState(addDays(endOfDay(new Date()), 7));
   const [activeDragItem, setActiveDragItem] = useState<
@@ -189,9 +193,53 @@ const Home: NextPage = () => {
       <Head>
         <title>Kanban!</title>
       </Head>
-      <main className="flex h-screen max-h-screen flex-col bg-gray-900">
-        <div className="flex h-12">test</div>
-        <div className="py-18 flex h-full flex-1">
+      <main
+        className={classNames(
+          // "bg-green-400",
+          // "bg-gray-800",
+          "flex h-screen flex-col"
+        )}
+      >
+        <div
+          className={classNames(
+            // "bg-red-400",
+            "flex h-24 flex-col px-2"
+          )}
+        >
+          <Group position={"apart"} className={"my-2"}>
+            <Text>Test</Text>
+            <Group position="apart">
+              <ActionIcon
+                onClick={() => colorScheme.toggleColorScheme()}
+                size="lg"
+                sx={(theme) => ({
+                  backgroundColor:
+                    theme.colorScheme === "dark"
+                      ? theme.colors.dark[6]
+                      : theme.colors.gray[0],
+                  color:
+                    theme.colorScheme === "dark"
+                      ? theme.colors.yellow[4]
+                      : theme.colors.blue[6],
+                })}
+              >
+                {colorScheme.colorScheme === "dark" ? (
+                  <IconSun size="1.2rem" />
+                ) : (
+                  <IconMoonStars size="1.2rem" />
+                )}
+              </ActionIcon>
+            </Group>
+          </Group>
+
+          <Divider />
+        </div>
+        <div
+          className={classNames(
+            // "bg-purple-400 p-2",
+            "flex grow overflow-clip"
+          )}
+        >
           <DndContext
             onDragStart={onDragStart}
             onDragOver={onDragOver}
@@ -206,8 +254,10 @@ const Home: NextPage = () => {
             }}
           >
             <div
-              id="task-list"
-              className="flex flex-row space-x-2 overflow-x-hidden rounded-lg px-2 py-2"
+              className={classNames(
+                // "bg-blue-400 p-1",
+                "flex w-80 shrink-0 flex-col overflow-y-auto"
+              )}
             >
               <Backlog
                 goToTodayClicked={() => {
@@ -219,7 +269,13 @@ const Home: NextPage = () => {
                   endAt,
                 }}
               />
-
+            </div>
+            <div
+              className={classNames(
+                // "bg-yellow-600 p-1",
+                "flex grow flex-row space-x-40 overflow-x-auto"
+              )}
+            >
               <KanbanBoard
                 currentCalendarDate={currentCalendarDate}
                 setCurrentCalendarDate={setCurrentCalendarDate}
@@ -230,6 +286,13 @@ const Home: NextPage = () => {
                   endAt,
                 }}
               />
+            </div>
+            <div
+              className={classNames(
+                // "bg-blue-600 p-1",
+                "w-80 shrink-0 flex-col overflow-y-auto border-l border-gray-600"
+              )}
+            >
               <Agenda items={calendarTasks} currentCalendarDate={currentCalendarDate} />
             </div>
 

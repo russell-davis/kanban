@@ -36,14 +36,18 @@ const Library: NextPage = () => {
           )}
         </ActionIcon>
       </div>
-      <div className="flex h-96 w-[300px] flex-col space-y-2 space-y-2 p-4">
+      <div className="flex h-96 w-[300px] flex-col space-y-2 p-4">
         {tasks.data?.tasksByDate
           .flatMap((tasksByDate) => tasksByDate.tasks)
           .map((task) => (
-            <TaskCard key={task.id} task={task} dateRange={{
-              startAt: taskDates.start,
-              endAt: taskDates.end,
-            }} />
+            <TaskCard
+              key={task.id}
+              task={task}
+              dateRange={{
+                startAt: taskDates.start,
+                endAt: taskDates.end,
+              }}
+            />
           ))}
       </div>
     </div>

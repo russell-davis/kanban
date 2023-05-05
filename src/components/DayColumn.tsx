@@ -41,7 +41,7 @@ export const DayColumn = (props: {
     >
       <div className={`DATE_TASK_LIST flex w-full flex-col space-y-3 p-1`}>
         <div className={classNames(`p-1`, isToday ? "font-black underline" : "")}>
-          <Text size={"md"} weight={500} color={"white"}>
+          <Text size={"md"} weight={500}>
             {props.dt.date.toLocaleDateString("en-US", {
               dateStyle: "medium",
             })}
@@ -54,10 +54,12 @@ export const DayColumn = (props: {
             strategy={verticalListSortingStrategy}
           >
             <div
-              className={`flex h-full shrink flex-col space-y-2 rounded-lg p-2 ${classNames(
+              className={`flex h-full flex-col space-y-2 rounded-lg p-2 ${classNames(
                 // entry?.isIntersecting ? "bg-green-400" :
                 "bg-gray-700",
-                props.isCurrentCalendarDate ? "rounded-lg border" : ""
+                props.isCurrentCalendarDate
+                  ? "rounded-lg border-2 border-solid border-white"
+                  : ""
               )}`}
             >
               {props.dt.tasks
@@ -81,9 +83,6 @@ export const DayColumn = (props: {
                   <Sortable id={task.id} data={task} key={task.id} type={DRAGABLES.TASK}>
                     <TaskCard task={task} dateRange={props.dateRange} />
                   </Sortable>
-                  // <Sortable id={task.id} data={task} key={task.id} type={DRAGABLES.TASK}>
-                  //   <TaskItem task={task} />
-                  // </Sortable>
                 ))}
               {props.dt.tasks.length === 0 && (
                 <Sortable

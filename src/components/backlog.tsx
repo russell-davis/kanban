@@ -1,6 +1,6 @@
 import { api, RouterOutputs } from "~/utils/api";
 import React, { useState } from "react";
-import { ActionIcon, Button, Text, TextInput } from "@mantine/core";
+import { ActionIcon, Button, Divider, Text, TextInput } from "@mantine/core";
 import { startOfDay } from "date-fns";
 import { IconCheck } from "@tabler/icons-react";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
@@ -37,9 +37,9 @@ export const Backlog = (props: {
         });
 
   return (
-    <div className="BACKLOG flex min-w-[300px] max-w-[300px] flex-col bg-gray-800">
+    <div className="BACKLOG h-full">
       <div className="TITLE flex flex-row justify-between p-2">
-        <Text size={"lg"} weight={500} color={"white"}>
+        <Text size={"lg"} weight={500}>
           Backlog
         </Text>
         <Button compact onClick={props.goToTodayClicked}>
@@ -78,6 +78,7 @@ export const Backlog = (props: {
           <IconCheck color={"green"} />
         </ActionIcon>
       </div>
+      <Divider className={"m-2"} />
       <div className="BACKLOG_LIST flex flex-col overflow-y-auto">
         <div className="flex grow flex-col space-y-2 p-2">
           <SortableContext
