@@ -1,5 +1,14 @@
 import { FC, useState } from "react";
-import { ActionIcon, Card, Divider, Group, Stack, Text, Textarea } from "@mantine/core";
+import {
+  ActionIcon,
+  Card,
+  Divider,
+  Group,
+  Overlay,
+  Stack,
+  Text,
+  Textarea,
+} from "@mantine/core";
 import { classNames } from "~/lib/classNames";
 import {
   IconArchive,
@@ -215,132 +224,129 @@ export const TaskCard: FC<{
     });
 
   return (
-    <Card withBorder shadow="sm" radius="md">
-      <Card.Section withBorder inheritPadding p={8}>
-        <Stack spacing={2}>
-          <Group position={"apart"}>
-            <Stack spacing={0}>
-              {task.scheduledFor ? (
-                <div className={"flex"}>
-                  <span className="flex inline-flex items-center rounded-md bg-gray-50 px-1 py-0.5 text-[6pt] font-bold text-gray-600 ring-1 ring-inset ring-gray-500/10">
-                    {task.scheduledFor && format(task.scheduledFor, "h:mm aaa")}
-                  </span>
-                </div>
-              ) : null}
-              <Text
-                weight={600}
-                pr={totalTimeEntrySeconds > 0 ? 10 : 0}
-                onClick={(event) => {
-                  openEditModal();
-                }}
-              >
-                {task.title}
-              </Text>
-            </Stack>
-            {totalTimeEntrySeconds > 0 ? (
-              <span className="absolute right-2 top-2 inline-flex items-center rounded-md bg-gray-50 px-1 py-0.5 text-[6pt] font-bold text-gray-600 ring-1 ring-inset ring-gray-500/10">
-                {actualTime} / {expectedTime}
-              </span>
+    <Card withBorder shadow="sm" radius="md" p={"xs"}>
+      {task.completed && <Overlay color="#000" opacity={0.5} />}
+      <Stack spacing={2}>
+        <Group position={"apart"}>
+          <Stack spacing={0}>
+            {task.scheduledFor ? (
+              <div className={"flex"}>
+                <span className="flex inline-flex items-center rounded-md bg-gray-50 px-1 py-0.5 text-[6pt] font-bold text-gray-600 ring-1 ring-inset ring-gray-500/10">
+                  {task.scheduledFor && format(task.scheduledFor, "h:mm aaa")}
+                </span>
+              </div>
             ) : null}
-          </Group>
-          {task.subtasks.length > 0 ? (
-            <Group align={"center"}>
-              <ActionIcon title={"complete"}>
-                <IconCircleCheck stroke={0.7} size={18} />
-              </ActionIcon>
-              <Text>subtasks</Text>
-            </Group>
-          ) : null}
-          <Group position="apart" align={"center"}>
-            <Group spacing={0}>
-              <ActionIcon
-                title={"complete"}
-                className={classNames(
-                  task.completed ? "text-green-500" : "text-gray-500"
-                )}
-                onClick={async (event) => {
-                  event.stopPropagation();
-                  completeTask.mutate({
-                    taskId: task.id,
-                    completed: !task.completed,
-                  });
-                }}
-              >
-                <IconCircleCheck stroke={0.7} />
-              </ActionIcon>
-              <ActionIcon
-                title={"reschedule"}
-                color={datePickerOpen ? "blue" : "gray"}
-                onClick={async (event) => {
-                  event.stopPropagation();
-                  setDatePickerOpen(!datePickerOpen);
-                }}
-              >
-                <IconCalendar stroke={0.7} size={20} />
-              </ActionIcon>
-              <ActionIcon
-                title={"timer"}
-                color={timerOpen ? "blue" : "gray"}
-                onClick={async (event) => {
-                  event.stopPropagation();
-                  setTimerOpen(!timerOpen);
-                }}
-              >
-                <IconClock stroke={0.7} size={20} />
-              </ActionIcon>
-            </Group>
             <Text
-              size={"xs"}
+              weight={600}
+              pr={totalTimeEntrySeconds > 0 ? 10 : 0}
               onClick={(event) => {
                 openEditModal();
               }}
             >
-              work
+              {task.title}
             </Text>
+          </Stack>
+          {totalTimeEntrySeconds > 0 ? (
+            <span className="absolute right-2 top-2 inline-flex items-center rounded-md bg-gray-50 px-1 py-0.5 text-[6pt] font-bold text-gray-600 ring-1 ring-inset ring-gray-500/10">
+              {actualTime} / {expectedTime}
+            </span>
+          ) : null}
+        </Group>
+        {task.subtasks.length > 0 ? (
+          <Group align={"center"}>
+            <ActionIcon title={"complete"}>
+              <IconCircleCheck stroke={0.7} size={18} />
+            </ActionIcon>
+            <Text>subtasks</Text>
           </Group>
-          {timerOpen && (
-            <Timer
-              currentDuration={totalTimeEntrySeconds}
-              onStart={() => console.log("start timer")}
-              onStop={async (duration) => {
-                console.log("stop", duration);
+        ) : null}
+        <Group position="apart" align={"center"}>
+          <Group spacing={0}>
+            <ActionIcon
+              title={"complete"}
+              className={classNames(task.completed ? "text-green-500" : "text-gray-500")}
+              onClick={async (event) => {
+                event.stopPropagation();
+                completeTask.mutate({
+                  taskId: task.id,
+                  completed: !task.completed,
+                });
+              }}
+            >
+              <IconCircleCheck stroke={0.7} />
+            </ActionIcon>
+            <ActionIcon
+              title={"reschedule"}
+              color={datePickerOpen ? "blue" : "gray"}
+              onClick={async (event) => {
+                event.stopPropagation();
+                setDatePickerOpen(!datePickerOpen);
+              }}
+            >
+              <IconCalendar stroke={0.7} size={20} />
+            </ActionIcon>
+            <ActionIcon
+              title={"timer"}
+              color={timerOpen ? "blue" : "gray"}
+              onClick={async (event) => {
+                event.stopPropagation();
+                setTimerOpen(!timerOpen);
+              }}
+            >
+              <IconClock stroke={0.7} size={20} />
+            </ActionIcon>
+          </Group>
+          <Text
+            size={"xs"}
+            onClick={(event) => {
+              openEditModal();
+            }}
+          >
+            work
+          </Text>
+        </Group>
+        {timerOpen && (
+          <Timer
+            currentDuration={totalTimeEntrySeconds}
+            onStart={() => console.log("start timer")}
+            onStop={async (duration) => {
+              console.log("stop", duration);
 
-                // optimistic update
-                await createTimeEntry
-                  .mutateAsync({
-                    taskId: task.id,
-                    time: duration,
-                  })
-                  .then(async () => {
-                    await utils.kanban.tasks.refetch();
-                  })
-                  .catch((e) => {
-                    console.error(e);
-                  });
+              // optimistic update
+              await createTimeEntry
+                .mutateAsync({
+                  taskId: task.id,
+                  time: duration,
+                })
+                .then(async () => {
+                  await utils.kanban.tasks.refetch();
+                })
+                .catch((e) => {
+                  console.error(e);
+                });
+            }}
+          />
+        )}
+        {datePickerOpen && (
+          <div className={classNames("flex flex-col items-center")}>
+            <DatePicker
+              value={datePickerDate}
+              onChange={(date) => {
+                console.info(date);
+                setDatePickerDate(date);
+                if (!date) return;
+                moveTaskItem.mutate({
+                  taskId: task.id,
+                  date: date,
+                  position: -1,
+                  backlog: false,
+                  scheduledFor: null,
+                });
               }}
             />
-          )}
-          {datePickerOpen && (
-            <div className={classNames("flex flex-col items-center")}>
-              <DatePicker
-                value={datePickerDate}
-                onChange={(date) => {
-                  console.info(date);
-                  setDatePickerDate(date);
-                  if (!date) return;
-                  moveTaskItem.mutate({
-                    taskId: task.id,
-                    date: date,
-                    position: -1,
-                    backlog: false,
-                    scheduledFor: null,
-                  });
-                }}
-              />
-            </div>
-          )}
-        </Stack>
-      </Card.Section>
+          </div>
+        )}
+      </Stack>
     </Card>
   );
 };

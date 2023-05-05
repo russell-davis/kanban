@@ -1,5 +1,5 @@
 import type { RouterOutputs } from "~/utils/api";
-import { Text } from "@mantine/core";
+import { ActionIcon, Group, Text } from "@mantine/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Sortable } from "~/components/Sortable";
 import { isSameDay } from "date-fns";
@@ -8,6 +8,7 @@ import { classNames } from "~/lib/classNames";
 import { useIntersection } from "@mantine/hooks";
 import { useEffect } from "react";
 import { TaskCard } from "~/components/task/TaskCard";
+import { IconDots } from "@tabler/icons-react";
 
 export const DayColumn = (props: {
   dt: RouterOutputs["kanban"]["tasks"]["tasksByDate"][number];
@@ -40,13 +41,21 @@ export const DayColumn = (props: {
       )}
     >
       <div className={`DATE_TASK_LIST flex w-full flex-col space-y-3 p-1`}>
-        <div className={classNames(`p-1`, isToday ? "font-black underline" : "")}>
-          <Text size={"md"} weight={500}>
-            {props.dt.date.toLocaleDateString("en-US", {
-              dateStyle: "medium",
-            })}
-          </Text>
-        </div>
+        <Group position={"apart"} align={"center"}>
+          <div className={classNames(`p-1`, isToday ? "underline" : "")}>
+            <Text size={"md"} weight={500}>
+              {props.dt.date.toLocaleDateString("en-US", {
+                dateStyle: "medium",
+              })}
+            </Text>
+          </div>
+          <ActionIcon>
+            <IconDots size={20} />
+          </ActionIcon>
+          {/*<Button compact variant={"outline"}>*/}
+          {/*  Details*/}
+          {/*</Button>*/}
+        </Group>
         <div className="flex grow flex-col overflow-y-auto">
           <SortableContext
             items={props.dt.tasks}

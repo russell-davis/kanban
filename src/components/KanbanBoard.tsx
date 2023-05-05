@@ -65,6 +65,7 @@ export const KanbanBoard = (props: {
           }}
         />
       ))}
+      <div className="flex min-w-[40rem] grow"></div>
     </div>
   );
 };

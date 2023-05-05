@@ -25,7 +25,6 @@ import { useDebouncedValue } from "@mantine/hooks";
 import { Backlog } from "~/components/backlog";
 import { Agenda } from "~/components/agenda";
 import { KanbanBoard } from "~/components/KanbanBoard";
-import { classNames } from "~/lib/classNames";
 import { ActionIcon, Divider, Group, Text, useMantineColorScheme } from "@mantine/core";
 import { IconMoonStars, IconSun } from "@tabler/icons-react";
 
@@ -193,19 +192,8 @@ const Home: NextPage = () => {
       <Head>
         <title>Kanban!</title>
       </Head>
-      <main
-        className={classNames(
-          // "bg-green-400",
-          // "bg-gray-800",
-          "flex h-screen flex-col"
-        )}
-      >
-        <div
-          className={classNames(
-            // "bg-red-400",
-            "flex h-24 flex-col px-2"
-          )}
-        >
+      <main className={"flex h-screen flex-col"}>
+        <div className={"flex h-24 flex-col px-2"}>
           <Group position={"apart"} className={"my-2"}>
             <Text>Test</Text>
             <Group position="apart">
@@ -234,12 +222,7 @@ const Home: NextPage = () => {
 
           <Divider />
         </div>
-        <div
-          className={classNames(
-            // "bg-purple-400 p-2",
-            "flex grow overflow-clip"
-          )}
-        >
+        <div className={"flex grow overflow-clip"}>
           <DndContext
             onDragStart={onDragStart}
             onDragOver={onDragOver}
@@ -253,12 +236,7 @@ const Home: NextPage = () => {
               },
             }}
           >
-            <div
-              className={classNames(
-                // "bg-blue-400 p-1",
-                "flex w-80 shrink-0 flex-col overflow-y-auto"
-              )}
-            >
+            <div className={"flex w-80 shrink-0 flex-col overflow-y-auto"}>
               <Backlog
                 goToTodayClicked={() => {
                   scrollToToday();
@@ -270,12 +248,7 @@ const Home: NextPage = () => {
                 }}
               />
             </div>
-            <div
-              className={classNames(
-                // "bg-yellow-600 p-1",
-                "flex grow flex-row space-x-40 overflow-x-auto"
-              )}
-            >
+            <div className={"flex grow flex-row space-x-40 overflow-x-auto"}>
               <KanbanBoard
                 currentCalendarDate={currentCalendarDate}
                 setCurrentCalendarDate={setCurrentCalendarDate}
@@ -288,10 +261,9 @@ const Home: NextPage = () => {
               />
             </div>
             <div
-              className={classNames(
-                // "bg-blue-600 p-1",
+              className={
                 "w-80 shrink-0 flex-col overflow-y-auto border-l border-gray-600"
-              )}
+              }
             >
               <Agenda items={calendarTasks} currentCalendarDate={currentCalendarDate} />
             </div>
