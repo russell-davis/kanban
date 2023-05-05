@@ -236,7 +236,7 @@ const Home: NextPage = () => {
               },
             }}
           >
-            <div className={"flex w-80 shrink-0 flex-col overflow-y-auto"}>
+            <div className={"flex w-80 shrink-0 flex-col"}>
               <Backlog
                 goToTodayClicked={() => {
                   scrollToToday();
@@ -260,11 +260,7 @@ const Home: NextPage = () => {
                 }}
               />
             </div>
-            <div
-              className={
-                "w-80 shrink-0 flex-col overflow-y-auto border-l border-gray-600"
-              }
-            >
+            <div className={"flex w-80 shrink-0 flex-col border-l border-gray-600"}>
               <Agenda items={calendarTasks} currentCalendarDate={currentCalendarDate} />
             </div>
 

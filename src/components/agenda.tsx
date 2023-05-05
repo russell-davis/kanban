@@ -9,8 +9,8 @@ export const Agenda = (props: {
   currentCalendarDate: Date;
   items: { hour: number; id: number; tasks: TaskData[] }[];
 }) => (
-  <div className="CALENDAR h-full max-h-full overflow-y-scroll">
-    <div className="flex flex-col p-2">
+  <div className="CALENDAR flex h-full max-h-full flex-col">
+    <div className="p-2">
       <Text size={"xl"} weight={500}>
         {props.currentCalendarDate.toLocaleDateString(undefined, {
           month: "long",
@@ -19,9 +19,9 @@ export const Agenda = (props: {
       </Text>
       <Divider className={"my-2"} />
     </div>
-    <div className="flex flex-col p-2">
+    <div className="overflow-y-auto p-2">
       {props.items.map((item, i) => (
-        <div key={i} className="h-12">
+        <div key={i} className="h-14">
           <Droppable
             id={`hour-drop-${i}`}
             data={{
@@ -50,8 +50,8 @@ export const Agenda = (props: {
                   data={t}
                   type={DRAGABLES.TASK}
                 >
-                  <div className="flex flex-row pl-10">
-                    <div className="flex flex-col items-start space-y-2 rounded bg-white px-2">
+                  <div className="flex w-full flex-row pl-10">
+                    <div className="flex w-full flex-col items-start space-y-2 rounded bg-white px-2">
                       <Text color={"black"} transform={"none"}>
                         {t.title}
                       </Text>

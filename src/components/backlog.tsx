@@ -37,7 +37,7 @@ export const Backlog = (props: {
         });
 
   return (
-    <div className="BACKLOG h-full">
+    <div className="BACKLOG flex h-full flex-col">
       <div className="TITLE flex flex-row justify-between p-2">
         <Text size={"lg"} weight={500}>
           Backlog
@@ -79,7 +79,7 @@ export const Backlog = (props: {
         </ActionIcon>
       </div>
       <Divider className={"m-2"} />
-      <div className="BACKLOG_LIST flex flex-col overflow-y-auto">
+      <div className="BACKLOG_LIST flex h-full flex-col overflow-y-auto">
         <div className="flex grow flex-col space-y-2 p-2">
           <SortableContext
             items={orderedTasks}
