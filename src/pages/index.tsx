@@ -25,8 +25,26 @@ import { useDebouncedValue } from "@mantine/hooks";
 import { Backlog } from "~/components/backlog";
 import { Agenda } from "~/components/agenda";
 import { KanbanBoard } from "~/components/KanbanBoard";
-import { ActionIcon, Divider, Group, Text, useMantineColorScheme } from "@mantine/core";
-import { IconMoonStars, IconSun } from "@tabler/icons-react";
+import {
+  ActionIcon,
+  Divider,
+  Group,
+  Menu,
+  Text,
+  useMantineColorScheme,
+} from "@mantine/core";
+import {
+  IconArrowsLeftRight,
+  IconMenu2,
+  IconMessageCircle,
+  IconMoonStars,
+  IconPhoto,
+  IconSearch,
+  IconSettings,
+  IconSun,
+  IconTrash,
+  IconX,
+} from "@tabler/icons-react";
 
 export const DRAGABLES = {
   CALENDAR: "calendar",
@@ -44,8 +62,7 @@ const Home: NextPage = () => {
   >(undefined);
   const [currentCalendarDate, setCurrentCalendarDate] = useState(new Date());
   const [debouncedDate, setDebouncedDate] = useDebouncedValue(currentCalendarDate, 500);
-
-  const [scrollPosition, setScrollPosition] = useState({ x: 0, y: 0 });
+  const [menuOpened, setMenuOpened] = useState(false);
   const [scrolledToInitialPosition, setScrolledToInitialPosition] = useState(false);
   const scrollToToday = () => setScrolledToInitialPosition(false);
 
@@ -195,7 +212,45 @@ const Home: NextPage = () => {
       <main className={"flex h-screen flex-col"}>
         <div className={"flex h-24 flex-col px-2"}>
           <Group position={"apart"} className={"my-2"}>
-            <Text>Test</Text>
+            <Group>
+              <Menu
+                shadow="md"
+                width={200}
+                opened={menuOpened}
+                onChange={(open) => setMenuOpened(open)}
+              >
+                <Menu.Target>
+                  {menuOpened ? <IconX size={24} /> : <IconMenu2 size={24} />}
+                </Menu.Target>
+
+                <Menu.Dropdown>
+                  <Menu.Label>Application</Menu.Label>
+                  <Menu.Item icon={<IconSettings size={14} />}>Settings</Menu.Item>
+                  <Menu.Item icon={<IconMessageCircle size={14} />}>Messages</Menu.Item>
+                  <Menu.Item icon={<IconPhoto size={14} />}>Gallery</Menu.Item>
+                  <Menu.Item
+                    icon={<IconSearch size={14} />}
+                    rightSection={
+                      <Text size="xs" color="dimmed">
+                        ⌘K
+                      </Text>
+                    }
+                  >
+                    Search
+                  </Menu.Item>
+
+                  <Menu.Divider />
+
+                  <Menu.Label>Danger zone</Menu.Label>
+                  <Menu.Item icon={<IconArrowsLeftRight size={14} />}>
+                    Transfer my data
+                  </Menu.Item>
+                  <Menu.Item color="red" icon={<IconTrash size={14} />}>
+                    Delete my account
+                  </Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
+            </Group>
             <Group position="apart">
               <ActionIcon
                 onClick={() => colorScheme.toggleColorScheme()}
