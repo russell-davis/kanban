@@ -11,7 +11,7 @@ import {
   Title,
 } from "@mantine/core";
 
-export function AuthenticationTitle() {
+function Login() {
   return (
     <Container size={420} my={40}>
       <Title
@@ -46,3 +46,5 @@ export function AuthenticationTitle() {
     </Container>
   );
 }
+
+export default Login;

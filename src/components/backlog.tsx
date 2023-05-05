@@ -5,8 +5,8 @@ import { startOfDay } from "date-fns";
 import { IconCheck } from "@tabler/icons-react";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Sortable } from "~/components/Sortable";
-import { DRAGABLES } from "~/pages";
 import { TaskCard } from "~/components/task/TaskCard";
+import { DRAGABLES } from "~/pages/dashboard";
 
 export const Backlog = (props: {
   goToTodayClicked: () => void;

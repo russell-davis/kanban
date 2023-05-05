@@ -2,8 +2,8 @@ import { Divider, Text } from "@mantine/core";
 import { Sortable } from "~/components/Sortable";
 import React, { FC } from "react";
 import { useDroppable } from "@dnd-kit/core";
-import { DRAGABLES } from "~/pages";
 import { TaskData } from "~/server/api/root";
+import { DRAGABLES } from "~/pages/dashboard";
 
 export const Agenda = (props: {
   currentCalendarDate: Date;

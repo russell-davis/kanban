@@ -3,12 +3,12 @@ import { ActionIcon, Group, Text } from "@mantine/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Sortable } from "~/components/Sortable";
 import { isSameDay } from "date-fns";
-import { DRAGABLES } from "~/pages";
 import { classNames } from "~/lib/classNames";
 import { useIntersection } from "@mantine/hooks";
 import { useEffect } from "react";
 import { TaskCard } from "~/components/task/TaskCard";
 import { IconDots } from "@tabler/icons-react";
+import { DRAGABLES } from "~/pages/dashboard";
 
 export const DayColumn = (props: {
   dt: RouterOutputs["kanban"]["tasks"]["tasksByDate"][number];
