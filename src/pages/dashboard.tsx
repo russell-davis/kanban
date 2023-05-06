@@ -48,7 +48,7 @@ import {
 } from "@tabler/icons-react";
 import { useRouter } from "next/router";
 import { getServerAuthSession } from "~/server/auth";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 
 export const DRAGABLES = {
   CALENDAR: "calendar",
@@ -76,6 +76,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 
 export const Dashboard: NextPage = () => {
   const router = useRouter();
+  const session = useSession();
   const colorScheme = useMantineColorScheme();
   const [startAt, setStartAt] = useState(subDays(startOfDay(new Date()), 3));
   const [endAt, setEndAt] = useState(addDays(endOfDay(new Date()), 7));
@@ -289,6 +290,7 @@ export const Dashboard: NextPage = () => {
                   </Menu.Item>
                 </Menu.Dropdown>
               </Menu>
+              <Text>Hi, {session.data?.user?.name}</Text>
             </Group>
             <Group position="apart">
               <ActionIcon
