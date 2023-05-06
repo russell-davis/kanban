@@ -1,6 +1,7 @@
 import { FC, useState } from "react";
 import {
   ActionIcon,
+  Badge,
   Card,
   Divider,
   Group,
@@ -302,7 +303,7 @@ export const TaskCard: FC<{
               openEditModal();
             }}
           >
-            work
+            <Badge color={task.channel.color}>{task.channel.name}</Badge>
           </Text>
         </Group>
         {timerOpen && (

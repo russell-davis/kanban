@@ -52,6 +52,7 @@ export const appRouter = createTRPCRouter({
               },
             },
             timeEntries: true,
+            channel: true,
           },
         });
         console.info("tasks", tasks.length);
@@ -81,7 +82,7 @@ export const appRouter = createTRPCRouter({
         })
       )
       .mutation(async ({ input, ctx }) => {
-        if (!ctx.session) {
+        if (!ctx.session || !ctx.session.user || !ctx.session.user.id) {
           throw new Error("not logged in");
         }
 
@@ -90,13 +91,37 @@ export const appRouter = createTRPCRouter({
             position: "desc",
           },
         });
+        // find the default channel for the user
+        const taskChannel = await ctx.prisma.taskChannel
+          .findFirst({
+            where: {
+              userId: ctx.session.user.id,
+              isDefault: true,
+            },
+          })
+          .then(async (c) => {
+            if (!c) {
+              return await ctx.prisma.taskChannel.create({
+                data: {
+                  name: "work",
+                  userId: ctx.session.user.id,
+                  isDefault: true,
+                  color: "#52ffec",
+                },
+              });
+            }
+            return c;
+          });
+
+        const userId = ctx.session.user.id;
         const task = await ctx.prisma.task.create({
           data: {
-            userId: ctx.session.user.id,
+            userId: userId,
             title: input.title,
             date: input.date,
             position: maxTaskPosition ? maxTaskPosition.position + 1 : 0,
             backlog: true,
+            channelId: taskChannel.id,
           },
         });
         console.info("created task", task);
@@ -160,6 +185,54 @@ export const appRouter = createTRPCRouter({
             completed: input.completed,
           },
         });
+      }),
+    update: protectedProcedure
+      .input(
+        z.object({
+          taskId: z.string(),
+          title: z.string().optional(),
+          notes: z.string().optional(),
+          channelId: z.string().optional(),
+          channel: z
+            .object({
+              name: z.string(),
+              color: z.string(),
+              isDefault: z.boolean().default(false),
+            })
+            .optional(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.session || !ctx.session.user || !ctx.session.user.id) {
+          throw new Error("not logged in");
+        }
+
+        const updated = await ctx.prisma.task.update({
+          where: {
+            id: input.taskId,
+          },
+          data: {
+            title: input.title,
+            // notes: input.notes,
+            channel: !input.channel
+              ? undefined
+              : {
+                  connectOrCreate: {
+                    where: {
+                      id: input.channelId,
+                      userId: ctx.session.user.id,
+                    },
+                    create: {
+                      name: input.channel.name,
+                      color: input.channel.color,
+                      userId: ctx.session.user.id,
+                    },
+                  },
+                },
+          },
+        });
+
+        return updated;
       }),
     delete: protectedProcedure
       .input(
