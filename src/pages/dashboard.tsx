@@ -1,4 +1,4 @@
-import { type NextPage } from "next";
+import { GetServerSideProps, type NextPage } from "next";
 import Head from "next/head";
 import { addDays, endOfDay, isSameDay, setHours, startOfDay, subDays } from "date-fns";
 import { api, type RouterOutputs } from "~/utils/api";
@@ -47,6 +47,8 @@ import {
   IconX,
 } from "@tabler/icons-react";
 import { useRouter } from "next/router";
+import { getServerAuthSession } from "~/server/auth";
+import { signOut } from "next-auth/react";
 
 export const DRAGABLES = {
   CALENDAR: "calendar",
@@ -55,7 +57,24 @@ export const DRAGABLES = {
   TASK: "task",
 };
 
-const Dashboard: NextPage = () => {
+export const getServerSideProps: GetServerSideProps = async (ctx) => {
+  const session = await getServerAuthSession(ctx);
+
+  if (!session || !session.user) {
+    return {
+      redirect: {
+        destination: "/login",
+        permanent: false,
+      },
+    };
+  }
+
+  return {
+    props: { session },
+  };
+};
+
+export const Dashboard: NextPage = () => {
   const router = useRouter();
   const colorScheme = useMantineColorScheme();
   const [startAt, setStartAt] = useState(subDays(startOfDay(new Date()), 3));
@@ -258,6 +277,15 @@ const Dashboard: NextPage = () => {
                   </Menu.Item>
                   <Menu.Item color="red" icon={<IconTrash size={14} />}>
                     Delete my account
+                  </Menu.Item>
+                  <Menu.Item
+                    color="red"
+                    icon={<IconTrash size={14} />}
+                    onClick={() => {
+                      signOut();
+                    }}
+                  >
+                    Logout
                   </Menu.Item>
                 </Menu.Dropdown>
               </Menu>

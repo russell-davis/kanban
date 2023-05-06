@@ -65,7 +65,7 @@ const useStyles = createStyles((theme) => ({
   },
 }));
 
-function HeroBullets() {
+const Home = () => {
   const { classes } = useStyles();
   const router = useRouter();
 
@@ -124,6 +124,6 @@ function HeroBullets() {
       </Container>
     </div>
   );
-}
+};
 
-export default HeroBullets;
+export default Home;

@@ -1,6 +1,6 @@
-import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
+import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { z } from "zod";
-import { isSameDay, startOfDay } from "date-fns";
+import { isSameDay } from "date-fns";
 import { RouterOutputs } from "~/utils/api";
 
 /**
@@ -10,32 +10,7 @@ import { RouterOutputs } from "~/utils/api";
  */
 export const appRouter = createTRPCRouter({
   kanban: createTRPCRouter({
-    seed: publicProcedure.mutation(async ({ ctx }) => {
-      // reset db
-      await ctx.prisma.task.deleteMany();
-
-      // create tasks
-      const dummyTasksPromises = [];
-      const d = startOfDay(new Date());
-      for (let i = 0; i < 10; i++) {
-        dummyTasksPromises.push(
-          ctx.prisma.task.create({
-            data: {
-              title: `Task ${i + 1}`,
-              date: d,
-              completed: false,
-              position: i,
-            },
-          })
-        );
-      }
-
-      const results = await Promise.all(dummyTasksPromises);
-      console.info("results", results);
-
-      return results;
-    }),
-    tasks: publicProcedure
+    tasks: protectedProcedure
       .input(
         z.object({
           cursor: z.string().optional(),
@@ -50,15 +25,20 @@ export const appRouter = createTRPCRouter({
 
         const tasks = await ctx.prisma.task.findMany({
           where: {
-            OR: [
+            AND: [
+              { userId: ctx.session.user.id },
               {
-                date: {
-                  gte: input.startAt,
-                  lte: input.endAt,
-                },
-              },
-              {
-                backlog: true,
+                OR: [
+                  {
+                    date: {
+                      gte: input.startAt,
+                      lte: input.endAt,
+                    },
+                  },
+                  {
+                    backlog: true,
+                  },
+                ],
               },
             ],
           },
@@ -93,7 +73,7 @@ export const appRouter = createTRPCRouter({
             ),
         };
       }),
-    create: publicProcedure
+    create: protectedProcedure
       .input(
         z.object({
           title: z.string(),
@@ -101,6 +81,10 @@ export const appRouter = createTRPCRouter({
         })
       )
       .mutation(async ({ input, ctx }) => {
+        if (!ctx.session) {
+          throw new Error("not logged in");
+        }
+
         const maxTaskPosition = await ctx.prisma.task.findFirst({
           orderBy: {
             position: "desc",
@@ -108,6 +92,7 @@ export const appRouter = createTRPCRouter({
         });
         const task = await ctx.prisma.task.create({
           data: {
+            userId: ctx.session.user.id,
             title: input.title,
             date: input.date,
             position: maxTaskPosition ? maxTaskPosition.position + 1 : 0,
@@ -118,7 +103,7 @@ export const appRouter = createTRPCRouter({
 
         return task;
       }),
-    updatePosition: publicProcedure
+    updatePosition: protectedProcedure
       .input(
         z.object({
           taskId: z.string(),
@@ -143,7 +128,7 @@ export const appRouter = createTRPCRouter({
       }),
   }),
   task: createTRPCRouter({
-    logTime: publicProcedure
+    logTime: protectedProcedure
       .input(
         z.object({
           taskId: z.string(),
@@ -164,7 +149,7 @@ export const appRouter = createTRPCRouter({
           },
         });
       }),
-    toggleCompleted: publicProcedure
+    toggleCompleted: protectedProcedure
       .input(z.object({ taskId: z.string(), completed: z.boolean() }))
       .mutation(async ({ input, ctx }) => {
         return ctx.prisma.task.update({
@@ -176,7 +161,7 @@ export const appRouter = createTRPCRouter({
           },
         });
       }),
-    delete: publicProcedure
+    delete: protectedProcedure
       .input(
         z.object({
           taskId: z.string(),

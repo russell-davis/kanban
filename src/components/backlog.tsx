@@ -93,7 +93,13 @@ export const Backlog = (props: {
             ))}
 
             {orderedTasks.length === 0 && (
-              <Sortable id={"backlog"} data={{}} type={DRAGABLES.BACKLOG}>
+              <Sortable
+                id={"backlog"}
+                data={{
+                  id: "backlog-empty-0",
+                }}
+                type={DRAGABLES.BACKLOG}
+              >
                 {" "}
               </Sortable>
             )}

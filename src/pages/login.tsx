@@ -1,17 +1,8 @@
-import {
-  Anchor,
-  Button,
-  Checkbox,
-  Container,
-  Group,
-  Paper,
-  PasswordInput,
-  Text,
-  TextInput,
-  Title,
-} from "@mantine/core";
+import { Button, Container, Group, Paper, Title } from "@mantine/core";
+import { IconBrandDiscord } from "@tabler/icons-react";
+import { signIn } from "next-auth/react";
 
-function Login() {
+const Login = () => {
   return (
     <Container size={420} my={40}>
       <Title
@@ -21,30 +12,25 @@ function Login() {
           fontWeight: 900,
         })}
       >
-        Welcome back!
+        Welcome!
       </Title>
-      <Text color="dimmed" size="sm" align="center" mt={5}>
-        Do not have an account yet?{" "}
-        <Anchor size="sm" component="button">
-          Create account
-        </Anchor>
-      </Text>
 
       <Paper withBorder shadow="md" p={30} mt={30} radius="md">
-        <TextInput label="Email" placeholder="you@mantine.dev" required />
-        <PasswordInput label="Password" placeholder="Your password" required mt="md" />
-        <Group position="apart" mt="lg">
-          <Checkbox label="Remember me" />
-          <Anchor component="button" size="sm">
-            Forgot password?
-          </Anchor>
+        <Group grow mb="md" mt="md">
+          <Button
+            leftIcon={<IconBrandDiscord radius="xl" />}
+            onClick={() => {
+              signIn("discord").then((r) => {
+                console.log(r);
+              });
+            }}
+          >
+            Login with Discord
+          </Button>
         </Group>
-        <Button fullWidth mt="xl">
-          Sign in
-        </Button>
       </Paper>
     </Container>
   );
-}
+};
 
 export default Login;
