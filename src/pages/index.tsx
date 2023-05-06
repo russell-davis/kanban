@@ -79,8 +79,8 @@ const Home = () => {
               with React, TypeScript, and Prisma
             </Title>
             <Text color="dimmed" mt="md">
-              Tired of paying for monthly subscriptions? Try out this free and open
-              source.
+              Tired of paying for monthly subscriptions? Try out this free and open source
+              kanban board for daily task management.
             </Text>
 
             <List
@@ -94,12 +94,12 @@ const Home = () => {
               }
             >
               <List.Item>
-                <b>TypeScript based</b> – build type safe applications, all components and
-                hooks export types
+                <b>TypeScript based</b> – extend the board by building type safe
+                applications, components and hooks
               </List.Item>
               <List.Item>
-                <b>Free and open source</b> – all packages have MIT license, you can use
-                Mantine in any project
+                <b>Free and open source</b> – all packages have MIT license, including
+                Mantine and Tailwindcss
               </List.Item>
             </List>
 
@@ -114,7 +114,15 @@ const Home = () => {
               >
                 Get started
               </Button>
-              <Button variant="default" radius="xl" size="md" className={classes.control}>
+              <Button
+                variant="default"
+                radius="xl"
+                size="md"
+                className={classes.control}
+                onClick={() => {
+                  router.push("https://github.com/russell-davis/kanban");
+                }}
+              >
                 Source code
               </Button>
             </Group>

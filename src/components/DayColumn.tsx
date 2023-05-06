@@ -1,13 +1,13 @@
 import type { RouterOutputs } from "~/utils/api";
-import { ActionIcon, Group, Text } from "@mantine/core";
+import { Group, Menu, Text } from "@mantine/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Sortable } from "~/components/Sortable";
 import { isSameDay } from "date-fns";
 import { classNames } from "~/lib/classNames";
 import { useIntersection } from "@mantine/hooks";
-import { useEffect } from "react";
+import React, { useEffect } from "react";
 import { TaskCard } from "~/components/task/TaskCard";
-import { IconDots } from "@tabler/icons-react";
+import { IconDots, IconFileAnalytics } from "@tabler/icons-react";
 import { DRAGABLES } from "~/pages/dashboard";
 
 export const DayColumn = (props: {
@@ -49,12 +49,17 @@ export const DayColumn = (props: {
               })}
             </Text>
           </div>
-          <ActionIcon>
-            <IconDots size={20} />
-          </ActionIcon>
-          {/*<Button compact variant={"outline"}>*/}
-          {/*  Details*/}
-          {/*</Button>*/}
+          <Menu shadow="md" width={200} position={"bottom-end"}>
+            <Menu.Target>
+              <IconDots size={24} />
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Label>Coming soon</Menu.Label>
+              <Menu.Item disabled icon={<IconFileAnalytics size={14} />}>
+                Summarize
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
         </Group>
         <div className="flex grow flex-col overflow-y-auto">
           <SortableContext
