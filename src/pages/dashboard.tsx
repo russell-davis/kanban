@@ -33,19 +33,7 @@ import {
   Text,
   useMantineColorScheme,
 } from "@mantine/core";
-import {
-  IconArrowsLeftRight,
-  IconHome,
-  IconMenu2,
-  IconMessageCircle,
-  IconMoonStars,
-  IconPhoto,
-  IconSearch,
-  IconSettings,
-  IconSun,
-  IconTrash,
-  IconX,
-} from "@tabler/icons-react";
+import { IconMenu2, IconMoonStars, IconSun, IconTrash, IconX } from "@tabler/icons-react";
 import { useRouter } from "next/router";
 import { getServerAuthSession } from "~/server/auth";
 import { signOut, useSession } from "next-auth/react";
@@ -247,38 +235,38 @@ export const Dashboard: NextPage = () => {
                 </Menu.Target>
 
                 <Menu.Dropdown>
-                  <Menu.Label>Application</Menu.Label>
-                  <Menu.Item
-                    icon={<IconHome size={14} />}
-                    onClick={() => {
-                      router.push("/");
-                    }}
-                  >
-                    Home
-                  </Menu.Item>
-                  <Menu.Item icon={<IconSettings size={14} />}>Settings</Menu.Item>
-                  <Menu.Item icon={<IconMessageCircle size={14} />}>Messages</Menu.Item>
-                  <Menu.Item icon={<IconPhoto size={14} />}>Gallery</Menu.Item>
-                  <Menu.Item
-                    icon={<IconSearch size={14} />}
-                    rightSection={
-                      <Text size="xs" color="dimmed">
-                        ⌘K
-                      </Text>
-                    }
-                  >
-                    Search
-                  </Menu.Item>
+                  {/*<Menu.Label>Application</Menu.Label>*/}
+                  {/*<Menu.Item*/}
+                  {/*  icon={<IconHome size={14} />}*/}
+                  {/*  onClick={() => {*/}
+                  {/*    router.push("/");*/}
+                  {/*  }}*/}
+                  {/*>*/}
+                  {/*  Home*/}
+                  {/*</Menu.Item>*/}
+                  {/*<Menu.Item icon={<IconSettings size={14} />}>Settings</Menu.Item>*/}
+                  {/*<Menu.Item icon={<IconMessageCircle size={14} />}>Messages</Menu.Item>*/}
+                  {/*<Menu.Item icon={<IconPhoto size={14} />}>Gallery</Menu.Item>*/}
+                  {/*<Menu.Item*/}
+                  {/*  icon={<IconSearch size={14} />}*/}
+                  {/*  rightSection={*/}
+                  {/*    <Text size="xs" color="dimmed">*/}
+                  {/*      ⌘K*/}
+                  {/*    </Text>*/}
+                  {/*  }*/}
+                  {/*>*/}
+                  {/*  Search*/}
+                  {/*</Menu.Item>*/}
 
-                  <Menu.Divider />
+                  {/*<Menu.Divider />*/}
 
                   <Menu.Label>Danger zone</Menu.Label>
-                  <Menu.Item icon={<IconArrowsLeftRight size={14} />}>
-                    Transfer my data
-                  </Menu.Item>
-                  <Menu.Item color="red" icon={<IconTrash size={14} />}>
-                    Delete my account
-                  </Menu.Item>
+                  {/*<Menu.Item icon={<IconArrowsLeftRight size={14} />}>*/}
+                  {/*  Transfer my data*/}
+                  {/*</Menu.Item>*/}
+                  {/*<Menu.Item color="red" icon={<IconTrash size={14} />}>*/}
+                  {/*  Delete my account*/}
+                  {/*</Menu.Item>*/}
                   <Menu.Item
                     color="red"
                     icon={<IconTrash size={14} />}
