@@ -162,63 +162,7 @@ export const TaskCard: FC<{
       centered: true,
       size: "lg",
       shadow: "lg",
-      children: (
-        <div className="flex flex-col space-y-2">
-          <div className="flex w-full flex-row items-start space-x-2 align-top">
-            <ActionIcon
-              color={task.completed ? "green" : "gray"}
-              className="mt-2"
-              loading={completeTask.isLoading}
-              disabled={completeTask.isLoading}
-              onClick={(e) => {
-                e.stopPropagation();
-                completeTask.mutate({
-                  taskId: task.id,
-                  completed: !task.completed,
-                });
-                task.completed = !task.completed;
-              }}
-            >
-              <IconCircleCheckFilled size={28} />
-            </ActionIcon>
-            <div className="flex flex-col justify-between pt-1">
-              <Text weight={600} size={"xl"}>
-                {task.title}
-              </Text>
-            </div>
-          </div>
-          <Textarea
-            label={"Notes"}
-            variant={"unstyled"}
-            placeholder={"Add notes..."}
-            className="pl-10"
-            minRows={4}
-            classNames={{
-              input: "h-56",
-            }}
-          />
-          <Divider />
-          <Stack spacing={4} className={"pb-8"}>
-            <Group align={"center"}>
-              <Text>Audit Logs</Text>
-            </Group>
-            <Group align={"center"}>
-              <IconArchive size={18} />
-              <Text size={"xs"}>Created: {task.createdAt.toLocaleDateString()}</Text>
-            </Group>
-            <Group align={"center"}>
-              <IconArchive size={18} />
-              <Text size={"xs"}>Updated: {task.updatedAt.toLocaleDateString()}</Text>
-            </Group>
-          </Stack>
-          <div className="flex flex-col space-y-2">
-            <Divider />
-            <Text size={"xs"} className="">
-              ID: {task.id}
-            </Text>
-          </div>
-        </div>
-      ),
+      children: <EditTaskModal task={task} dateRange={dateRange} />,
       classNames: {
         // inner: "h-72",
       },
@@ -381,3 +325,133 @@ export function getHoursMinutes(totalTimeInHoursAndMinutes: Duration) {
       : `0${totalTimeInHoursAndMinutes.minutes}`
   }`;
 }
+
+export const EditTaskModal = ({
+  task,
+  dateRange,
+}: {
+  task: TaskData;
+  dateRange: { startAt: Date; endAt: Date };
+}) => {
+  const completeTask = useCompleteTaskMutation({
+    task: task,
+    dateRange: dateRange,
+  });
+
+  return (
+    <div className="flex flex-col space-y-2">
+      <div className="flex w-full flex-row items-start space-x-2 align-top">
+        <ActionIcon
+          color={task.completed ? "green" : "gray"}
+          className="mt-2"
+          loading={completeTask.isLoading}
+          disabled={completeTask.isLoading}
+          onClick={(e) => {
+            e.stopPropagation();
+            completeTask.mutate({
+              taskId: task.id,
+              completed: !task.completed,
+            });
+          }}
+        >
+          <IconCircleCheckFilled size={28} />
+        </ActionIcon>
+        <div className="flex flex-col justify-between pt-1">
+          <Text weight={600} size={"xl"}>
+            {task.title}
+          </Text>
+        </div>
+      </div>
+      <Textarea
+        label={"Notes"}
+        variant={"unstyled"}
+        placeholder={"Add notes..."}
+        className="pl-10"
+        minRows={4}
+        classNames={{
+          input: "h-56",
+        }}
+      />
+      <Divider />
+      <Stack spacing={4} className={"pb-8"}>
+        <Group align={"center"}>
+          <Text>Audit Logs</Text>
+        </Group>
+        <Group align={"center"}>
+          <IconArchive size={18} />
+          <Text size={"xs"}>Created: {task.createdAt.toLocaleDateString()}</Text>
+        </Group>
+        <Group align={"center"}>
+          <IconArchive size={18} />
+          <Text size={"xs"}>Updated: {task.updatedAt.toLocaleDateString()}</Text>
+        </Group>
+      </Stack>
+      <div className="flex flex-col space-y-2">
+        <Divider />
+        <Text size={"xs"} className="">
+          ID: {task.id}
+        </Text>
+      </div>
+    </div>
+  );
+};
+
+const useCompleteTaskMutation = ({
+  task,
+  dateRange,
+}: {
+  task: TaskData;
+  dateRange: { startAt: Date; endAt: Date };
+}) => {
+  const utils = api.useContext();
+  const completeTask = api.task.toggleCompleted.useMutation({
+    onMutate: async ({ taskId, completed }) => {
+      // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
+      await utils.kanban.tasks.cancel();
+
+      // Snapshot the previous value
+      const previous = utils.kanban.tasks.getData(dateRange);
+      console.info(`previous: ${previous?.tasksByDate.length}`);
+
+      // Optimistically update to the new value
+      utils.kanban.tasks.setData(dateRange, (td) => {
+        if (!td) return td;
+        return {
+          ...td,
+          tasksByDate: td.tasksByDate.map((tbd) => {
+            if (!isSameDay(tbd.date, task.date)) return tbd;
+            return {
+              ...tbd,
+              tasks: tbd.tasks.map((t) => {
+                if (t.id !== taskId) return t;
+                return {
+                  ...t,
+                  completed: completed,
+                };
+              }),
+            };
+          }),
+          backlog: td.backlog.map((t) => {
+            if (t.id !== taskId) return t;
+            return {
+              ...t,
+              completed: completed,
+            };
+          }),
+        };
+      });
+
+      // Return a context object with the snapshotted value
+      return { previous };
+    },
+    onError: (err, variables, context) => {
+      utils.kanban.tasks.setData(dateRange, context?.previous);
+    },
+    onSettled: async () => {
+      await utils.kanban.tasks.invalidate(dateRange);
+      console.info("toggled completed task and invalidated");
+    },
+  });
+
+  return completeTask;
+};

@@ -29,6 +29,7 @@ model Task {
   timeEntries  TaskTimeEntry[]
   channelId    String
   channel      TaskChannel     @relation(fields: [channelId], references: [id])
+  notes        String          @default("")
 
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
