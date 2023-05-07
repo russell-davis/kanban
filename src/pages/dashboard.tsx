@@ -25,18 +25,9 @@ import { useDebouncedValue } from "@mantine/hooks";
 import { Backlog } from "~/components/backlog";
 import { Agenda } from "~/components/agenda";
 import { KanbanBoard } from "~/components/KanbanBoard";
-import {
-  ActionIcon,
-  Divider,
-  Group,
-  Menu,
-  Text,
-  useMantineColorScheme,
-} from "@mantine/core";
-import { IconMenu2, IconMoonStars, IconSun, IconTrash, IconX } from "@tabler/icons-react";
-import { useRouter } from "next/router";
 import { getServerAuthSession } from "~/server/auth";
-import { signOut, useSession } from "next-auth/react";
+import { EditTaskModal } from "~/components/task/TaskCard";
+import { DashboardNavbar } from "~/components/DashboardNavbar";
 
 export const DRAGABLES = {
   CALENDAR: "calendar",
@@ -63,9 +54,10 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 };
 
 export const Dashboard: NextPage = () => {
-  const router = useRouter();
-  const session = useSession();
-  const colorScheme = useMantineColorScheme();
+  const [editTaskModalIsOpen, setEditTaskModalIsOpen] = useState(false);
+  const [editTaskModalTask, setEditTaskModalTask] = useState<TaskData | undefined>(
+    undefined
+  );
   const [startAt, setStartAt] = useState(subDays(startOfDay(new Date()), 3));
   const [endAt, setEndAt] = useState(addDays(endOfDay(new Date()), 7));
   const [activeDragItem, setActiveDragItem] = useState<
@@ -73,7 +65,6 @@ export const Dashboard: NextPage = () => {
   >(undefined);
   const [currentCalendarDate, setCurrentCalendarDate] = useState(new Date());
   const [debouncedDate, setDebouncedDate] = useDebouncedValue(currentCalendarDate, 500);
-  const [menuOpened, setMenuOpened] = useState(false);
   const [scrolledToInitialPosition, setScrolledToInitialPosition] = useState(false);
   const scrollToToday = () => setScrolledToInitialPosition(false);
 
@@ -99,68 +90,6 @@ export const Dashboard: NextPage = () => {
     })
   );
 
-  // useEffect(() => {
-  //   function calculateHorizontalScrollPercent(element: any) {
-  //     const { scrollWidth, clientWidth, scrollLeft } = element;
-  //     const maxScrollLeft = scrollWidth - clientWidth;
-  //     const percentScrolled = (scrollLeft / maxScrollLeft) * 100;
-  //     // round to 2 decimal places
-  //     return Math.round(percentScrolled * 100) / 100;
-  //   }
-  //
-  //   // write a function that calculates the leftmost visible item in a horizontal scrollable. the
-  //   // function should take the scrollable element, and the width of the items in the scrollable.
-  //   function calculateLeftmostVisibleItem(
-  //     element: any,
-  //     columnWidth: number,
-  //     padding: number
-  //   ) {
-  //     const { scrollLeft, scrollWidth } = element;
-  //
-  //     const numberOfItems = tasksQuery.data?.tasksByDate.length || 0;
-  //     const widthPerItem = document.querySelector(".DAY_COLUMN")?.clientWidth || 0;
-  //
-  //     // ex: if the scrollLeft is between 0 and 300, the leftmost visible item is index 0
-  //     // ex: if the scrollLeft is between 300 and 600, the leftmost visible item is index 1
-  //     // ex: if the scrollLeft is between 600 and 900, the leftmost visible item is index 2
-  //     const scrollPercent = scrollLeft / scrollWidth;
-  //
-  //     let leftmostVisibleIndex = Math.round((scrollLeft / scrollWidth) * numberOfItems);
-  //     console.info(leftmostVisibleIndex);
-  //
-  //     return leftmostVisibleIndex;
-  //   }
-  //
-  //   const handleScroll = (event: any) => {
-  //     if (!event.target) return;
-  //     if (!!activeDragItem) {
-  //       // prevent scrolling while dragging
-  //       event.target.scrollLeft = scrollPosition.x;
-  //       return;
-  //     }
-  //     const percent = calculateHorizontalScrollPercent(event.target);
-  //     if (percent < 10 || percent > 90) {
-  //     }
-  //
-  //     // const day = tasksQuery.data?.tasksByDate.at(leftMost);
-  //     // if (day && !isSameDay(day.date, currentCalendarDate)) {
-  //     //   // console.info(`day = ${day.date}`);
-  //     //   // console.info(`diff = ${day.date.getTime() - currentCalendarDate.getTime()}`);
-  //     //   setCurrentCalendarDate(day.date);
-  //     // }
-  //   };
-  //
-  //   const myElement = scrollableRef.current;
-  //   if (myElement) {
-  //     myElement.addEventListener("scroll", handleScroll);
-  //   }
-  //
-  //   return () => {
-  //     if (myElement) {
-  //       myElement.removeEventListener("scroll", handleScroll);
-  //     }
-  //   };
-  // }, [scrollableRef, tasksQuery.data?.tasksByDate, activeDragItem]);
   useEffect(() => {
     if (
       !!tasksQuery.data &&
@@ -221,91 +150,7 @@ export const Dashboard: NextPage = () => {
         <title>Kanban!</title>
       </Head>
       <main className={"flex h-screen flex-col"}>
-        <div className={"flex h-24 flex-col px-2"}>
-          <Group position={"apart"} className={"my-2"}>
-            <Group>
-              <Menu
-                shadow="md"
-                width={200}
-                opened={menuOpened}
-                onChange={(open) => setMenuOpened(open)}
-              >
-                <Menu.Target>
-                  {menuOpened ? <IconX size={24} /> : <IconMenu2 size={24} />}
-                </Menu.Target>
-
-                <Menu.Dropdown>
-                  {/*<Menu.Label>Application</Menu.Label>*/}
-                  {/*<Menu.Item*/}
-                  {/*  icon={<IconHome size={14} />}*/}
-                  {/*  onClick={() => {*/}
-                  {/*    router.push("/");*/}
-                  {/*  }}*/}
-                  {/*>*/}
-                  {/*  Home*/}
-                  {/*</Menu.Item>*/}
-                  {/*<Menu.Item icon={<IconSettings size={14} />}>Settings</Menu.Item>*/}
-                  {/*<Menu.Item icon={<IconMessageCircle size={14} />}>Messages</Menu.Item>*/}
-                  {/*<Menu.Item icon={<IconPhoto size={14} />}>Gallery</Menu.Item>*/}
-                  {/*<Menu.Item*/}
-                  {/*  icon={<IconSearch size={14} />}*/}
-                  {/*  rightSection={*/}
-                  {/*    <Text size="xs" color="dimmed">*/}
-                  {/*      ⌘K*/}
-                  {/*    </Text>*/}
-                  {/*  }*/}
-                  {/*>*/}
-                  {/*  Search*/}
-                  {/*</Menu.Item>*/}
-
-                  {/*<Menu.Divider />*/}
-
-                  <Menu.Label>Danger zone</Menu.Label>
-                  {/*<Menu.Item icon={<IconArrowsLeftRight size={14} />}>*/}
-                  {/*  Transfer my data*/}
-                  {/*</Menu.Item>*/}
-                  {/*<Menu.Item color="red" icon={<IconTrash size={14} />}>*/}
-                  {/*  Delete my account*/}
-                  {/*</Menu.Item>*/}
-                  <Menu.Item
-                    color="red"
-                    icon={<IconTrash size={14} />}
-                    onClick={() => {
-                      signOut();
-                    }}
-                  >
-                    Logout
-                  </Menu.Item>
-                </Menu.Dropdown>
-              </Menu>
-              <Text>Hi, {session.data?.user?.name}</Text>
-            </Group>
-            <Group position="apart">
-              <ActionIcon
-                onClick={() => colorScheme.toggleColorScheme()}
-                size="lg"
-                sx={(theme) => ({
-                  backgroundColor:
-                    theme.colorScheme === "dark"
-                      ? theme.colors.dark[6]
-                      : theme.colors.gray[0],
-                  color:
-                    theme.colorScheme === "dark"
-                      ? theme.colors.yellow[4]
-                      : theme.colors.blue[6],
-                })}
-              >
-                {colorScheme.colorScheme === "dark" ? (
-                  <IconSun size="1.2rem" />
-                ) : (
-                  <IconMoonStars size="1.2rem" />
-                )}
-              </ActionIcon>
-            </Group>
-          </Group>
-
-          <Divider />
-        </div>
+        <DashboardNavbar />
         <div className={"flex grow overflow-clip"}>
           <DndContext
             onDragStart={onDragStart}
@@ -330,6 +175,10 @@ export const Dashboard: NextPage = () => {
                   startAt,
                   endAt,
                 }}
+                onEditTaskClicked={(task) => {
+                  setEditTaskModalTask(task);
+                  setEditTaskModalIsOpen(true);
+                }}
               />
             </div>
             <div className={"flex grow flex-row space-x-40 overflow-x-auto"}>
@@ -341,6 +190,10 @@ export const Dashboard: NextPage = () => {
                 range={{
                   startAt,
                   endAt,
+                }}
+                onEditTaskClicked={(task) => {
+                  setEditTaskModalTask(task);
+                  setEditTaskModalIsOpen(true);
                 }}
               />
             </div>
@@ -361,6 +214,15 @@ export const Dashboard: NextPage = () => {
           </DndContext>
         </div>
       </main>
+      <EditTaskModal
+        task={editTaskModalTask}
+        open={editTaskModalIsOpen}
+        setOpen={setEditTaskModalIsOpen}
+        onClose={() => {
+          setEditTaskModalIsOpen(false);
+          setEditTaskModalTask(undefined);
+        }}
+      />
     </>
   );
 

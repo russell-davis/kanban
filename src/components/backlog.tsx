@@ -7,11 +7,13 @@ import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { Sortable } from "~/components/Sortable";
 import { TaskCard } from "~/components/task/TaskCard";
 import { DRAGABLES } from "~/pages/dashboard";
+import { TaskData } from "~/server/api/root";
 
 export const Backlog = (props: {
   goToTodayClicked: () => void;
   tasksQueryData?: RouterOutputs["kanban"]["tasks"];
   dateRange: { startAt: Date; endAt: Date };
+  onEditTaskClicked: (task: TaskData) => void;
 }) => {
   // newTitle state
   const [newTitle, setNewTitle] = useState("");
@@ -88,7 +90,14 @@ export const Backlog = (props: {
           >
             {orderedTasks.map((task) => (
               <Sortable key={task.id} id={task.id} data={task} type={DRAGABLES.BACKLOG}>
-                <TaskCard key={task.id} task={task} dateRange={props.dateRange} />
+                <TaskCard
+                  key={task.id}
+                  task={task}
+                  dateRange={props.dateRange}
+                  onEditTaskClicked={(task) => {
+                    props.onEditTaskClicked(task);
+                  }}
+                />
               </Sortable>
             ))}
 

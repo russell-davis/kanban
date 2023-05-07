@@ -1,4 +1,4 @@
-import { FC, useState } from "react";
+import React, { FC, useState } from "react";
 import {
   ActionIcon,
   Badge,
@@ -6,6 +6,7 @@ import {
   Card,
   Divider,
   Group,
+  Modal,
   Overlay,
   Stack,
   Text,
@@ -24,7 +25,6 @@ import { DatePicker } from "@mantine/dates";
 import { api } from "~/utils/api";
 import { TaskData } from "~/server/api/root";
 import { format, intervalToDuration, isSameDay } from "date-fns";
-import { modals } from "@mantine/modals";
 
 export const TaskCard: FC<{
   task: TaskData;
@@ -32,7 +32,8 @@ export const TaskCard: FC<{
     startAt: Date;
     endAt: Date;
   };
-}> = ({ task, dateRange }) => {
+  onEditTaskClicked: (task: TaskData) => void;
+}> = ({ task, dateRange, onEditTaskClicked }) => {
   const [datePickerOpen, setDatePickerOpen] = useState<boolean>(false);
   const [datePickerDate, setDatePickerDate] = useState<Date | null>(task.date);
   const [timerOpen, setTimerOpen] = useState<boolean>(false);
@@ -152,28 +153,19 @@ export const TaskCard: FC<{
     })
   );
 
-  const openEditModal = (task: TaskData) =>
-    modals.open({
-      modalId: "edit-task",
-      title: (
-        <Text weight={"600"} size={"lg"}>
-          Edit Task
-        </Text>
-      ),
-      centered: true,
-      size: "lg",
-      shadow: "lg",
-      children: <EditTaskModal task={task} />,
-      classNames: {
-        // inner: "h-72",
-      },
-    });
+  const handleCardDoubleClicked = () => {
+    onEditTaskClicked(task);
+  };
 
   return (
-    <Card withBorder shadow="sm" radius="md" p={"xs"}>
-      {task.completed && (
-        <Overlay color="#000" opacity={0.5} onClick={() => openEditModal(task)} />
-      )}
+    <Card
+      withBorder
+      shadow="sm"
+      radius="md"
+      p={"xs"}
+      onDoubleClick={(event) => handleCardDoubleClicked()}
+    >
+      {task.completed && <Overlay color="#000" opacity={0.5} />}
       <Stack spacing={2}>
         <Group position={"apart"}>
           <Stack spacing={0}>
@@ -188,7 +180,7 @@ export const TaskCard: FC<{
               weight={600}
               pr={totalTimeEntrySeconds > 0 ? 10 : 0}
               onClick={(event) => {
-                openEditModal(task);
+                handleCardDoubleClicked();
               }}
             >
               {task.title}
@@ -247,7 +239,7 @@ export const TaskCard: FC<{
           <Text
             size={"xs"}
             onClick={(event) => {
-              openEditModal(task);
+              handleCardDoubleClicked();
             }}
           >
             <Badge color={task.channel.color}>{task.channel.name}</Badge>
@@ -329,7 +321,29 @@ export function getHoursMinutes(totalTimeInHoursAndMinutes: Duration) {
   }`;
 }
 
-export const EditTaskModal = ({ task }: { task: TaskData }) => {
+export const EditTaskModal: FC<{
+  open: boolean;
+  setOpen: (open: boolean) => void;
+  onClose: () => void;
+  task: TaskData | undefined;
+}> = ({ open, setOpen, onClose, task }) => {
+  return (
+    <Modal
+      centered
+      // fullScreen
+      title={"Edit Task"}
+      size={"xl"}
+      opened={open}
+      onClose={() => {
+        onClose();
+      }}
+    >
+      {task && <EditTaskModalForm task={task} />}
+    </Modal>
+  );
+};
+
+export const EditTaskModalForm = ({ task }: { task: TaskData }) => {
   const taskQuery = api.task.find.useQuery({
     taskId: task.id,
   });

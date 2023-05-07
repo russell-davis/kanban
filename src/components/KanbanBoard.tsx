@@ -3,6 +3,7 @@ import { DayColumn } from "~/components/DayColumn";
 import { isSameDay, min } from "date-fns";
 import { classNames } from "~/lib/classNames";
 import { RouterOutputs } from "~/utils/api";
+import { TaskData } from "~/server/api/root";
 
 export const KanbanBoard = (props: {
   activeDragItem: any;
@@ -13,6 +14,7 @@ export const KanbanBoard = (props: {
     startAt: Date;
     endAt: Date;
   };
+  onEditTaskClicked: (task: TaskData) => void;
 }) => {
   const {
     activeDragItem,
@@ -62,6 +64,9 @@ export const KanbanBoard = (props: {
             if (minDate) {
               setCurrentCalendarDate(minDate);
             }
+          }}
+          onEditTaskClicked={(task) => {
+            props.onEditTaskClicked(task);
           }}
         />
       ))}

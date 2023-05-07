@@ -9,6 +9,7 @@ import React, { useEffect } from "react";
 import { TaskCard } from "~/components/task/TaskCard";
 import { IconDots, IconFileAnalytics } from "@tabler/icons-react";
 import { DRAGABLES } from "~/pages/dashboard";
+import { TaskData } from "~/server/api/root";
 
 export const DayColumn = (props: {
   dt: RouterOutputs["kanban"]["tasks"]["tasksByDate"][number];
@@ -17,6 +18,8 @@ export const DayColumn = (props: {
   didBecomeVisible: () => void;
   didBecomeInvisible: () => void;
   dateRange: { startAt: Date; endAt: Date };
+
+  onEditTaskClicked: (task: TaskData) => void;
 }) => {
   const { ref, entry } = useIntersection({
     root: props.containerRef.current,
@@ -95,7 +98,13 @@ export const DayColumn = (props: {
                 })
                 .map((task) => (
                   <Sortable id={task.id} data={task} key={task.id} type={DRAGABLES.TASK}>
-                    <TaskCard task={task} dateRange={props.dateRange} />
+                    <TaskCard
+                      task={task}
+                      dateRange={props.dateRange}
+                      onEditTaskClicked={(task) => {
+                        props.onEditTaskClicked(task);
+                      }}
+                    />
                   </Sortable>
                 ))}
               {props.dt.tasks.length === 0 && (
