@@ -186,6 +186,28 @@ export const appRouter = createTRPCRouter({
           },
         });
       }),
+    find: protectedProcedure
+      .input(
+        z.object({
+          taskId: z.string(),
+        })
+      )
+      .query(async ({ input, ctx }) => {
+        return ctx.prisma.task.findUnique({
+          where: {
+            id: input.taskId,
+          },
+          include: {
+            subtasks: {
+              orderBy: {
+                id: "asc",
+              },
+            },
+            timeEntries: true,
+            channel: true,
+          },
+        });
+      }),
     update: protectedProcedure
       .input(
         z.object({
@@ -213,7 +235,7 @@ export const appRouter = createTRPCRouter({
           },
           data: {
             title: input.title,
-            // notes: input.notes,
+            notes: input.notes,
             channel: !input.channel
               ? undefined
               : {

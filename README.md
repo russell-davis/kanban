@@ -38,6 +38,18 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 ```
+#### postgres
+To use postgres, make sure your `.env` file has the following:
+```
+DATABASE_URL="postgresql://user:password@host:port/dbname"
+```
+then in `~/prisma/schema.prisma` set the provider to postgres:
+```
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+```
 
 
 If you are not familiar with the different technologies used in this project, please refer to the respective docs.

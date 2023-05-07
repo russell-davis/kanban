@@ -9,8 +9,9 @@ import {
   ThemeIcon,
   Title,
 } from "@mantine/core";
-import { IconCheck } from "@tabler/icons-react";
+import { IconBrandDiscord, IconCheck } from "@tabler/icons-react";
 import { useRouter } from "next/router";
+import { signIn } from "next-auth/react";
 
 const useStyles = createStyles((theme) => ({
   inner: {
@@ -108,11 +109,13 @@ const Home = () => {
                 radius="xl"
                 size="md"
                 className={classes.control}
-                onClick={() => {
-                  router.push("/login");
+                onClick={async () => {
+                  // router.push("/login");
+                  await signIn("discord");
                 }}
+                leftIcon={<IconBrandDiscord />}
               >
-                Get started
+                Get started with Discord
               </Button>
               <Button
                 variant="default"

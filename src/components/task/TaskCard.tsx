@@ -2,6 +2,7 @@ import { FC, useState } from "react";
 import {
   ActionIcon,
   Badge,
+  Button,
   Card,
   Divider,
   Group,
@@ -151,7 +152,7 @@ export const TaskCard: FC<{
     })
   );
 
-  const openEditModal = () =>
+  const openEditModal = (task: TaskData) =>
     modals.open({
       modalId: "edit-task",
       title: (
@@ -162,7 +163,7 @@ export const TaskCard: FC<{
       centered: true,
       size: "lg",
       shadow: "lg",
-      children: <EditTaskModal task={task} dateRange={dateRange} />,
+      children: <EditTaskModal task={task} />,
       classNames: {
         // inner: "h-72",
       },
@@ -170,7 +171,9 @@ export const TaskCard: FC<{
 
   return (
     <Card withBorder shadow="sm" radius="md" p={"xs"}>
-      {task.completed && <Overlay color="#000" opacity={0.5} />}
+      {task.completed && (
+        <Overlay color="#000" opacity={0.5} onClick={() => openEditModal(task)} />
+      )}
       <Stack spacing={2}>
         <Group position={"apart"}>
           <Stack spacing={0}>
@@ -185,7 +188,7 @@ export const TaskCard: FC<{
               weight={600}
               pr={totalTimeEntrySeconds > 0 ? 10 : 0}
               onClick={(event) => {
-                openEditModal();
+                openEditModal(task);
               }}
             >
               {task.title}
@@ -244,7 +247,7 @@ export const TaskCard: FC<{
           <Text
             size={"xs"}
             onClick={(event) => {
-              openEditModal();
+              openEditModal(task);
             }}
           >
             <Badge color={task.channel.color}>{task.channel.name}</Badge>
@@ -326,23 +329,29 @@ export function getHoursMinutes(totalTimeInHoursAndMinutes: Duration) {
   }`;
 }
 
-export const EditTaskModal = ({
-  task,
-  dateRange,
-}: {
-  task: TaskData;
-  dateRange: { startAt: Date; endAt: Date };
-}) => {
-  const completeTask = useCompleteTaskMutation({
-    task: task,
-    dateRange: dateRange,
+export const EditTaskModal = ({ task }: { task: TaskData }) => {
+  const taskQuery = api.task.find.useQuery({
+    taskId: task.id,
   });
+  const completeTask = api.task.toggleCompleted.useMutation({
+    onSettled: async () => {
+      await taskQuery.refetch();
+    },
+  });
+  const updateTask = api.task.update.useMutation();
+  const [title, setTitle] = useState(task.title);
+  const [notes, setNotes] = useState(task.notes);
+
+  const changesMade = taskQuery.data
+    ? taskQuery.data.title !== title || taskQuery.data.notes !== notes
+    : false;
 
   return (
     <div className="flex flex-col space-y-2">
+      {(!taskQuery.data || taskQuery.isLoading) && <Overlay color="#000" opacity={0.5} />}
       <div className="flex w-full flex-row items-start space-x-2 align-top">
         <ActionIcon
-          color={task.completed ? "green" : "gray"}
+          color={taskQuery.data?.completed ? "green" : "gray"}
           className="mt-2"
           loading={completeTask.isLoading}
           disabled={completeTask.isLoading}
@@ -356,20 +365,30 @@ export const EditTaskModal = ({
         >
           <IconCircleCheckFilled size={28} />
         </ActionIcon>
-        <div className="flex flex-col justify-between pt-1">
-          <Text weight={600} size={"xl"}>
-            {task.title}
-          </Text>
+        <div className="flex grow flex-col justify-between pt-1">
+          <Textarea
+            placeholder="Your comment"
+            // variant="unstyled"
+            size="xl"
+            value={title}
+            onChange={(event) => {
+              setTitle(event.target.value);
+            }}
+          />
         </div>
       </div>
       <Textarea
         label={"Notes"}
-        variant={"unstyled"}
+        // variant={"unstyled"}
         placeholder={"Add notes..."}
         className="pl-10"
-        minRows={4}
+        minRows={3}
         classNames={{
-          input: "h-56",
+          input: "h-36",
+        }}
+        value={notes}
+        onChange={(event) => {
+          setNotes(event.target.value);
         }}
       />
       <Divider />
@@ -388,70 +407,26 @@ export const EditTaskModal = ({
       </Stack>
       <div className="flex flex-col space-y-2">
         <Divider />
-        <Text size={"xs"} className="">
-          ID: {task.id}
-        </Text>
+        <Group position={"apart"} align={"center"}>
+          <Text size={"xs"} className="">
+            ID: {task.id}
+          </Text>
+          {changesMade && (
+            <Button
+              compact
+              onClick={() => {
+                updateTask.mutate({
+                  taskId: task.id,
+                  title: title,
+                  notes: notes,
+                });
+              }}
+            >
+              Save
+            </Button>
+          )}
+        </Group>
       </div>
     </div>
   );
-};
-
-const useCompleteTaskMutation = ({
-  task,
-  dateRange,
-}: {
-  task: TaskData;
-  dateRange: { startAt: Date; endAt: Date };
-}) => {
-  const utils = api.useContext();
-  const completeTask = api.task.toggleCompleted.useMutation({
-    onMutate: async ({ taskId, completed }) => {
-      // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
-      await utils.kanban.tasks.cancel();
-
-      // Snapshot the previous value
-      const previous = utils.kanban.tasks.getData(dateRange);
-      console.info(`previous: ${previous?.tasksByDate.length}`);
-
-      // Optimistically update to the new value
-      utils.kanban.tasks.setData(dateRange, (td) => {
-        if (!td) return td;
-        return {
-          ...td,
-          tasksByDate: td.tasksByDate.map((tbd) => {
-            if (!isSameDay(tbd.date, task.date)) return tbd;
-            return {
-              ...tbd,
-              tasks: tbd.tasks.map((t) => {
-                if (t.id !== taskId) return t;
-                return {
-                  ...t,
-                  completed: completed,
-                };
-              }),
-            };
-          }),
-          backlog: td.backlog.map((t) => {
-            if (t.id !== taskId) return t;
-            return {
-              ...t,
-              completed: completed,
-            };
-          }),
-        };
-      });
-
-      // Return a context object with the snapshotted value
-      return { previous };
-    },
-    onError: (err, variables, context) => {
-      utils.kanban.tasks.setData(dateRange, context?.previous);
-    },
-    onSettled: async () => {
-      await utils.kanban.tasks.invalidate(dateRange);
-      console.info("toggled completed task and invalidated");
-    },
-  });
-
-  return completeTask;
 };
