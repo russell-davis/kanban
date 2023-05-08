@@ -43,7 +43,7 @@ export const EditTaskModal: FC<{
     >
       <Modal.Content>
         <Modal.Header>
-          <Modal.Title>Edit Task: "{task?.title}"</Modal.Title>
+          <Modal.Title>Edit Task: {`"${task?.title}"`}</Modal.Title>
           <Group>
             <ActionIcon
               onClick={() => {
