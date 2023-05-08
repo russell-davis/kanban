@@ -78,12 +78,12 @@ export const ChannelSelector: FC<{
             value={selectedOption?.color}
             onChange={(value) => {
               console.info("change:", value);
-              changeTaskChannel.mutateAsync({
-                taskId: taskId,
-                channel: {
-                  color: value,
-                },
-              });
+              // changeTaskChannel.mutateAsync({
+              //   taskId: taskId,
+              //   channel: {
+              //     color: value,
+              //   },
+              // });
             }}
           />
           <Select

@@ -8,9 +8,18 @@ import {
 } from "@mantine/core";
 import { signOut, useSession } from "next-auth/react";
 import React, { useState } from "react";
-import { IconMenu2, IconMoonStars, IconSun, IconTrash, IconX } from "@tabler/icons-react";
+import {
+  IconMenu2,
+  IconMoonStars,
+  IconSettings,
+  IconSun,
+  IconTrash,
+  IconX,
+} from "@tabler/icons-react";
+import { useRouter } from "next/router";
 
 export const DashboardNavbar = () => {
+  const router = useRouter();
   const { colorScheme, toggleColorScheme } = useMantineColorScheme();
   const session = useSession();
   const [menuOpened, setMenuOpened] = useState(false);
@@ -22,13 +31,27 @@ export const DashboardNavbar = () => {
             shadow="md"
             width={200}
             opened={menuOpened}
-            onChange={() => setMenuOpened(!menuOpened)}
+            // onChange={() => setMenuOpened(!menuOpened)}
+            onClose={() => setMenuOpened(false)}
+            onOpen={() => setMenuOpened(true)}
           >
             <Menu.Target>
               {menuOpened ? <IconX size={24} /> : <IconMenu2 size={24} />}
             </Menu.Target>
 
             <Menu.Dropdown>
+              <Menu.Label>Account</Menu.Label>
+              <Menu.Item
+                // color="blue"
+                icon={<IconSettings size={14} />}
+                onClick={async () => {
+                  await router.push("/settings");
+                }}
+              >
+                Settings
+              </Menu.Item>
+
+              <Menu.Divider />
               <Menu.Item
                 color="red"
                 icon={<IconTrash size={14} />}
