@@ -17,6 +17,7 @@ import {
   IconX,
 } from "@tabler/icons-react";
 import { useRouter } from "next/router";
+import { SETTINGS_APPS } from "~/pages/settings";
 
 export const DashboardNavbar = () => {
   const router = useRouter();
@@ -28,6 +29,10 @@ export const DashboardNavbar = () => {
       <Group position={"apart"} className={"my-2"}>
         <Group>
           <Menu
+            withinPortal
+            withArrow
+            offset={4}
+            position={"bottom-start"}
             shadow="md"
             width={200}
             opened={menuOpened}
@@ -45,7 +50,7 @@ export const DashboardNavbar = () => {
                 // color="blue"
                 icon={<IconSettings size={14} />}
                 onClick={async () => {
-                  await router.push("/settings");
+                  await router.push(`/settings?t=${SETTINGS_APPS.GENERAL}`);
                 }}
               >
                 Settings
