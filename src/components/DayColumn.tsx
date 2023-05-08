@@ -58,7 +58,13 @@ export const DayColumn = (props: {
             <Menu.Dropdown>
               <Menu.Label>Coming soon</Menu.Label>
               <Menu.Item disabled icon={<IconFileAnalytics size={14} />}>
-                Summarize
+                Startup
+              </Menu.Item>
+              <Menu.Item disabled icon={<IconFileAnalytics size={14} />}>
+                Shutdown
+              </Menu.Item>
+              <Menu.Item disabled icon={<IconFileAnalytics size={14} />}>
+                Stats
               </Menu.Item>
             </Menu.Dropdown>
           </Menu>
