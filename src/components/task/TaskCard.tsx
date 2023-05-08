@@ -1,119 +1,14 @@
 import React, { FC, useState } from "react";
-import {
-  ActionIcon,
-  Badge,
-  Card,
-  ColorInput,
-  Group,
-  Overlay,
-  Popover,
-  Select,
-  Stack,
-  Text,
-} from "@mantine/core";
+import { ActionIcon, Card, Group, Overlay, Stack, Text } from "@mantine/core";
 import { classNames } from "~/lib/classNames";
 import { IconCalendar, IconCircleCheck, IconClock } from "@tabler/icons-react";
 import { Timer } from "~/components/task/Timer";
 import { DatePicker } from "@mantine/dates";
-import { api, RouterOutputs } from "~/utils/api";
+import { api } from "~/utils/api";
 import { TaskData } from "~/server/api/root";
 import { format, intervalToDuration, isSameDay } from "date-fns";
 import { getHoursMinutes } from "~/lib/GetHoursMinutes";
-
-export const ChannelSelector: FC<{
-  taskId: string;
-  currentChannel: RouterOutputs["channels"]["list"][number];
-}> = ({ taskId, currentChannel }) => {
-  const channels = api.channels.list.useQuery();
-  const changeTaskChannel = api.task.update.useMutation();
-  if (channels.isLoading) return <Badge color="gray">...</Badge>;
-  if (!channels.data) return <Badge color="gray">No channels</Badge>;
-  const selectedOption = channels.data?.find((c) => c.id === currentChannel.id);
-  const channelList =
-    channels.data?.map((channel) => {
-      return {
-        label: channel.name,
-        value: channel.id,
-      };
-    }) || [];
-
-  return (
-    <Popover
-      width={200}
-      position="bottom-end"
-      withArrow
-      shadow="md"
-      withinPortal
-      offset={4}
-    >
-      <Popover.Target>
-        <Badge color={selectedOption?.color}>{selectedOption?.name}</Badge>
-      </Popover.Target>
-      <Popover.Dropdown
-        sx={(theme) => ({
-          background: theme.colorScheme === "dark" ? theme.colors.dark[7] : theme.white,
-        })}
-      >
-        <Stack>
-          <ColorInput
-            label={"Color"}
-            format="hex"
-            swatches={[
-              "#25262b",
-              "#868e96",
-              "#fa5252",
-              "#e64980",
-              "#be4bdb",
-              "#7950f2",
-              "#4c6ef5",
-              "#228be6",
-              "#15aabf",
-              "#12b886",
-              "#40c057",
-              "#82c91e",
-              "#fab005",
-              "#fd7e14",
-            ]}
-            defaultValue={selectedOption?.color}
-            value={selectedOption?.color}
-            onChange={(value) => {
-              console.info("change:", value);
-              // changeTaskChannel.mutateAsync({
-              //   taskId: taskId,
-              //   channel: {
-              //     color: value,
-              //   },
-              // });
-            }}
-          />
-          <Select
-            label="Select a channel"
-            clearable
-            creatable
-            searchable
-            value={selectedOption?.id}
-            onChange={(value) => {
-              console.info("change:", value);
-            }}
-            data={channelList}
-            getCreateLabel={(value) => `Create channel: "${value}"`}
-            onCreate={(value) => {
-              console.info("create:", value);
-              changeTaskChannel.mutateAsync({
-                taskId: taskId,
-                channel: {
-                  name: value,
-                  color: "blue",
-                },
-              });
-              return value;
-            }}
-          />
-        </Stack>
-      </Popover.Dropdown>
-    </Popover>
-  );
-};
+import { ChannelSelector } from "~/components/task/ChannelSelector";
 
 export const TaskCard: FC<{
   task: TaskData;

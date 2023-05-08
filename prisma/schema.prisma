@@ -59,7 +59,7 @@ enum UserRole {
 
 model TaskChannel {
   id        String  @id @default(cuid())
-  userId    String  @unique
+  userId    String
   user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   isDefault Boolean @default(false)
   name      String  @unique @default("work")

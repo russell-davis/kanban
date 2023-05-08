@@ -1,18 +1,9 @@
 import { NextPage } from "next";
-import {
-  AppShell,
-  Button,
-  Footer,
-  Group,
-  Header,
-  Navbar,
-  NavLink,
-  Stack,
-} from "@mantine/core";
+import { AppShell, Footer, Header, Navbar, NavLink, Stack } from "@mantine/core";
 import { DashboardNavbar } from "~/components/DashboardNavbar";
 import { IconArrowLeft, IconHome2, IconSection } from "@tabler/icons-react";
 import { useRouter } from "next/router";
-import { api } from "~/utils/api";
+import { ChannelSettings } from "~/components/settings/ChannelSettings";
 
 export const SETTINGS_APPS = {
   GENERAL: "general",
@@ -72,9 +63,6 @@ const Settings: NextPage = () => {
         </Footer>
       }
     >
-      <Stack>
-        <div>{JSON.stringify(router.query)}</div>
-      </Stack>
       {tab === SETTINGS_APPS.GENERAL && (
         <div className="general">
           <Stack>
@@ -82,42 +70,9 @@ const Settings: NextPage = () => {
           </Stack>
         </div>
       )}
-      {tab === SETTINGS_APPS.CHANNELS && (
-        <div className="channels">
-          <Stack>
-            <h1>Channel Settings</h1>
-            <Stack>
-              <ChannelSettings />
-            </Stack>
-          </Stack>
-        </div>
-      )}
+      {tab === SETTINGS_APPS.CHANNELS && <ChannelSettings />}
     </AppShell>
   );
 };
 
 export default Settings;
-
-const ChannelSettings = () => {
-  const channels = api.channels.list.useQuery();
-  if (channels.isLoading) return <div>Loading...</div>;
-  if (!channels.data) return <div>No channels found</div>;
-
-  return (
-    <Stack>
-      {channels.data.map((channel) => (
-        <div key={channel.id}>
-          <Group position={"apart"}>
-            <div>{channel.name}</div>
-            <Group>
-              <Button compact>Edit</Button>
-              <Button compact color={"red"}>
-                Delete
-              </Button>
-            </Group>
-          </Group>
-        </div>
-      ))}
-    </Stack>
-  );
-};
