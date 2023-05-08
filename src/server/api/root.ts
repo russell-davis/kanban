@@ -279,6 +279,19 @@ export const appRouter = createTRPCRouter({
           });
       }),
   }),
+  channels: createTRPCRouter({
+    list: protectedProcedure.query(async ({ input, ctx }) => {
+      if (!ctx.session || !ctx.session.user || !ctx.session.user.id) {
+        throw new Error("not logged in");
+      }
+
+      return ctx.prisma.taskChannel.findMany({
+        where: {
+          userId: ctx.session.user.id,
+        },
+      });
+    }),
+  }),
 });
 
 // export type definition of API

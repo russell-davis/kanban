@@ -2,29 +2,118 @@ import React, { FC, useState } from "react";
 import {
   ActionIcon,
   Badge,
-  Button,
   Card,
-  Divider,
+  ColorInput,
   Group,
-  Modal,
   Overlay,
+  Popover,
+  Select,
   Stack,
   Text,
-  Textarea,
 } from "@mantine/core";
 import { classNames } from "~/lib/classNames";
-import {
-  IconArchive,
-  IconCalendar,
-  IconCircleCheck,
-  IconCircleCheckFilled,
-  IconClock,
-} from "@tabler/icons-react";
+import { IconCalendar, IconCircleCheck, IconClock } from "@tabler/icons-react";
 import { Timer } from "~/components/task/Timer";
 import { DatePicker } from "@mantine/dates";
-import { api } from "~/utils/api";
+import { api, RouterOutputs } from "~/utils/api";
 import { TaskData } from "~/server/api/root";
 import { format, intervalToDuration, isSameDay } from "date-fns";
+import { getHoursMinutes } from "~/lib/GetHoursMinutes";
+
+export const ChannelSelector: FC<{
+  taskId: string;
+  currentChannel: RouterOutputs["channels"]["list"][number];
+}> = ({ taskId, currentChannel }) => {
+  const channels = api.channels.list.useQuery();
+  const changeTaskChannel = api.task.update.useMutation();
+  if (channels.isLoading) return <Badge color="gray">...</Badge>;
+  if (!channels.data) return <Badge color="gray">No channels</Badge>;
+  const selectedOption = channels.data?.find((c) => c.id === currentChannel.id);
+  const channelList =
+    channels.data?.map((channel) => {
+      return {
+        label: channel.name,
+        value: channel.id,
+      };
+    }) || [];
+
+  return (
+    <Popover
+      width={200}
+      position="bottom-end"
+      withArrow
+      shadow="md"
+      withinPortal
+      offset={4}
+    >
+      <Popover.Target>
+        <Badge color={selectedOption?.color}>{selectedOption?.name}</Badge>
+      </Popover.Target>
+      <Popover.Dropdown
+        sx={(theme) => ({
+          background: theme.colorScheme === "dark" ? theme.colors.dark[7] : theme.white,
+        })}
+      >
+        <Stack>
+          <ColorInput
+            label={"Color"}
+            format="hex"
+            swatches={[
+              "#25262b",
+              "#868e96",
+              "#fa5252",
+              "#e64980",
+              "#be4bdb",
+              "#7950f2",
+              "#4c6ef5",
+              "#228be6",
+              "#15aabf",
+              "#12b886",
+              "#40c057",
+              "#82c91e",
+              "#fab005",
+              "#fd7e14",
+            ]}
+            defaultValue={selectedOption?.color}
+            value={selectedOption?.color}
+            onChange={(value) => {
+              console.info("change:", value);
+              changeTaskChannel.mutateAsync({
+                taskId: taskId,
+                channel: {
+                  color: value,
+                },
+              });
+            }}
+          />
+          <Select
+            label="Select a channel"
+            clearable
+            creatable
+            searchable
+            value={selectedOption?.id}
+            onChange={(value) => {
+              console.info("change:", value);
+            }}
+            data={channelList}
+            getCreateLabel={(value) => `Create channel: "${value}"`}
+            onCreate={(value) => {
+              console.info("create:", value);
+              changeTaskChannel.mutateAsync({
+                taskId: taskId,
+                channel: {
+                  name: value,
+                  color: "blue",
+                },
+              });
+              return value;
+            }}
+          />
+        </Stack>
+      </Popover.Dropdown>
+    </Popover>
+  );
+};
 
 export const TaskCard: FC<{
   task: TaskData;
@@ -171,7 +260,7 @@ export const TaskCard: FC<{
           <Stack spacing={0}>
             {task.scheduledFor ? (
               <div className={"flex"}>
-                <span className="flex inline-flex items-center rounded-md bg-gray-50 px-1 py-0.5 text-[6pt] font-bold text-gray-600 ring-1 ring-inset ring-gray-500/10">
+                <span className=" inline-flex items-center rounded-md bg-gray-50 px-1 py-0.5 text-[6pt] font-bold text-gray-600 ring-1 ring-inset ring-gray-500/10">
                   {task.scheduledFor && format(task.scheduledFor, "h:mm aaa")}
                 </span>
               </div>
@@ -236,14 +325,7 @@ export const TaskCard: FC<{
               <IconClock stroke={0.7} size={20} />
             </ActionIcon>
           </Group>
-          <Text
-            size={"xs"}
-            onClick={(event) => {
-              handleCardDoubleClicked();
-            }}
-          >
-            <Badge color={task.channel.color}>{task.channel.name}</Badge>
-          </Text>
+          <ChannelSelector taskId={task.id} currentChannel={task.channel} />
         </Group>
         {timerOpen && (
           <Timer
@@ -288,159 +370,5 @@ export const TaskCard: FC<{
         )}
       </Stack>
     </Card>
-  );
-};
-export function getHoursMinutes(totalTimeInHoursAndMinutes: Duration) {
-  // if all are zero, return --:--
-  if (
-    totalTimeInHoursAndMinutes.seconds === 0 &&
-    totalTimeInHoursAndMinutes.minutes === 0 &&
-    totalTimeInHoursAndMinutes.hours === 0
-  ) {
-    return "--:--";
-  }
-
-  // if less than 1 minute, return 00:01
-  if (
-    totalTimeInHoursAndMinutes.seconds &&
-    totalTimeInHoursAndMinutes.seconds < 60 &&
-    totalTimeInHoursAndMinutes.minutes === 0 &&
-    totalTimeInHoursAndMinutes.hours === 0
-  ) {
-    return "00:01";
-  }
-
-  return `${
-    !!totalTimeInHoursAndMinutes.hours && totalTimeInHoursAndMinutes.hours > 9
-      ? totalTimeInHoursAndMinutes.hours
-      : `0${totalTimeInHoursAndMinutes.hours}`
-  }:${
-    !!totalTimeInHoursAndMinutes.minutes && totalTimeInHoursAndMinutes.minutes > 9
-      ? totalTimeInHoursAndMinutes.minutes
-      : `0${totalTimeInHoursAndMinutes.minutes}`
-  }`;
-}
-
-export const EditTaskModal: FC<{
-  open: boolean;
-  setOpen: (open: boolean) => void;
-  onClose: () => void;
-  task: TaskData | undefined;
-}> = ({ open, setOpen, onClose, task }) => {
-  return (
-    <Modal
-      centered
-      // fullScreen
-      title={"Edit Task"}
-      size={"xl"}
-      opened={open}
-      onClose={() => {
-        onClose();
-      }}
-    >
-      {task && <EditTaskModalForm task={task} />}
-    </Modal>
-  );
-};
-
-export const EditTaskModalForm = ({ task }: { task: TaskData }) => {
-  const taskQuery = api.task.find.useQuery({
-    taskId: task.id,
-  });
-  const completeTask = api.task.toggleCompleted.useMutation({
-    onSettled: async () => {
-      await taskQuery.refetch();
-    },
-  });
-  const updateTask = api.task.update.useMutation();
-  const [title, setTitle] = useState(task.title);
-  const [notes, setNotes] = useState(task.notes);
-
-  const changesMade = taskQuery.data
-    ? taskQuery.data.title !== title || taskQuery.data.notes !== notes
-    : false;
-
-  return (
-    <div className="flex flex-col space-y-2">
-      {(!taskQuery.data || taskQuery.isLoading) && <Overlay color="#000" opacity={0.5} />}
-      <div className="flex w-full flex-row items-start space-x-2 align-top">
-        <ActionIcon
-          color={taskQuery.data?.completed ? "green" : "gray"}
-          className="mt-2"
-          loading={completeTask.isLoading}
-          disabled={completeTask.isLoading}
-          onClick={(e) => {
-            e.stopPropagation();
-            completeTask.mutate({
-              taskId: task.id,
-              completed: !task.completed,
-            });
-          }}
-        >
-          <IconCircleCheckFilled size={28} />
-        </ActionIcon>
-        <div className="flex grow flex-col justify-between pt-1">
-          <Textarea
-            placeholder="Your comment"
-            // variant="unstyled"
-            size="xl"
-            value={title}
-            onChange={(event) => {
-              setTitle(event.target.value);
-            }}
-          />
-        </div>
-      </div>
-      <Textarea
-        label={"Notes"}
-        // variant={"unstyled"}
-        placeholder={"Add notes..."}
-        className="pl-10"
-        minRows={3}
-        classNames={{
-          input: "h-36",
-        }}
-        value={notes}
-        onChange={(event) => {
-          setNotes(event.target.value);
-        }}
-      />
-      <Divider />
-      <Stack spacing={4} className={"pb-8"}>
-        <Group align={"center"}>
-          <Text>Audit Logs</Text>
-        </Group>
-        <Group align={"center"}>
-          <IconArchive size={18} />
-          <Text size={"xs"}>Created: {task.createdAt.toLocaleDateString()}</Text>
-        </Group>
-        <Group align={"center"}>
-          <IconArchive size={18} />
-          <Text size={"xs"}>Updated: {task.updatedAt.toLocaleDateString()}</Text>
-        </Group>
-      </Stack>
-      <div className="flex flex-col space-y-2">
-        <Divider />
-        <Group position={"apart"} align={"center"}>
-          <Text size={"xs"} className="">
-            ID: {task.id}
-          </Text>
-          {changesMade && (
-            <Button
-              compact
-              onClick={() => {
-                updateTask.mutate({
-                  taskId: task.id,
-                  title: title,
-                  notes: notes,
-                });
-              }}
-            >
-              Save
-            </Button>
-          )}
-        </Group>
-      </div>
-    </div>
   );
 };

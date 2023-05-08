@@ -18,7 +18,6 @@ export const DayColumn = (props: {
   didBecomeVisible: () => void;
   didBecomeInvisible: () => void;
   dateRange: { startAt: Date; endAt: Date };
-
   onEditTaskClicked: (task: TaskData) => void;
 }) => {
   const { ref, entry } = useIntersection({

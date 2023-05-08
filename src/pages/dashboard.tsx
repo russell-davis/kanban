@@ -12,22 +12,20 @@ import {
   type DragOverEvent,
   DragOverlay,
   type DragStartEvent,
-  KeyboardSensor,
   MeasuringStrategy,
   MouseSensor,
   TouchSensor,
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import { coordinateGetter } from "~/components/dndkit/multipleContainersKeyboardCoordinates";
 import { TaskData } from "~/server/api/root";
 import { useDebouncedValue } from "@mantine/hooks";
 import { Backlog } from "~/components/backlog";
 import { Agenda } from "~/components/agenda";
 import { KanbanBoard } from "~/components/KanbanBoard";
 import { getServerAuthSession } from "~/server/auth";
-import { EditTaskModal } from "~/components/task/TaskCard";
 import { DashboardNavbar } from "~/components/DashboardNavbar";
+import { EditTaskModal } from "~/components/EditTaskModal";
 
 export const DRAGABLES = {
   CALENDAR: "calendar",
@@ -84,10 +82,10 @@ export const Dashboard: NextPage = () => {
         distance: 10,
       },
     }),
-    useSensor(TouchSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter,
-    })
+    useSensor(TouchSensor)
+    // useSensor(KeyboardSensor, {
+    //   coordinateGetter,
+    // })
   );
 
   useEffect(() => {
