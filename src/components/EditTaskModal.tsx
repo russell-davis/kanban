@@ -18,6 +18,7 @@ import {
   IconCircleCheckFilled,
   IconFocus,
   IconPencil,
+  IconTrash,
 } from "@tabler/icons-react";
 
 export const EditTaskModal: FC<{
@@ -29,6 +30,12 @@ export const EditTaskModal: FC<{
   const [fullScreen, setFullScreen] = useState(false);
   const taskQuery = api.task.find.useQuery({
     taskId: task ? task.id : "",
+  });
+
+  const deleteTask = api.task.delete.useMutation({
+    onSettled: () => {
+      onClose();
+    },
   });
 
   return (
@@ -45,6 +52,16 @@ export const EditTaskModal: FC<{
         <Modal.Header>
           <Modal.Title>Edit Task: {`"${task?.title}"`}</Modal.Title>
           <Group>
+            <ActionIcon
+              onClick={() => {
+                if (!task) return;
+                deleteTask.mutate({
+                  taskId: task.id,
+                });
+              }}
+            >
+              <IconTrash size={14} />
+            </ActionIcon>
             <ActionIcon
               onClick={() => {
                 setFullScreen(!fullScreen);
