@@ -109,6 +109,11 @@ export const Users = () => {
       usersQuery.refetch();
     },
   });
+  const toggleUserBanned = api.users.ban.useMutation({
+    onSettled: () => {
+      usersQuery.refetch();
+    },
+  });
   return (
     <Stack>
       <h1>Users</h1>
@@ -119,6 +124,7 @@ export const Users = () => {
             <th>Username</th>
             <th>Active?</th>
             <th>Admin?</th>
+            <th>Banned?</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -153,6 +159,18 @@ export const Users = () => {
                         toggleUserAdmin.mutate({
                           userId: user.id,
                           isAdmin: user.role === "ADMIN",
+                        });
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <Checkbox
+                      disabled={toggleUserBanned.isLoading}
+                      checked={user.isBanned}
+                      onChange={async (event) => {
+                        toggleUserBanned.mutate({
+                          userId: user.id,
+                          isBanned: !user.isBanned,
                         });
                       }}
                     />

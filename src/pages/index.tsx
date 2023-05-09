@@ -12,6 +12,8 @@ import {
 import { IconBrandDiscord, IconCheck } from "@tabler/icons-react";
 import { useRouter } from "next/router";
 import { signIn } from "next-auth/react";
+import { GetServerSideProps } from "next";
+import { getServerAuthSession } from "~/server/auth";
 
 const useStyles = createStyles((theme) => ({
   inner: {
@@ -66,6 +68,30 @@ const useStyles = createStyles((theme) => ({
   },
 }));
 
+export const getServerSideProps: GetServerSideProps = async (ctx) => {
+  const session = await getServerAuthSession(ctx);
+
+  if (!!session) {
+    if (session.user.isBanned) {
+      return {
+        redirect: {
+          destination: "/404",
+          permanent: true,
+        },
+      };
+    }
+    return {
+      redirect: {
+        destination: "/dashboard",
+        permanent: true,
+      },
+    };
+  }
+
+  return {
+    props: { session },
+  };
+};
 const Home = () => {
   const { classes } = useStyles();
   const router = useRouter();

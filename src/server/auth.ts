@@ -18,12 +18,16 @@ declare module "next-auth" {
       id: string;
       // ...other properties
       role: UserRole;
+      isActive: boolean;
+      isBanned: boolean;
     } & DefaultSession["user"];
   }
 
   interface User {
     // ...other properties
     role: UserRole;
+    isActive: boolean;
+    isBanned: boolean;
   }
 }
 
@@ -38,6 +42,9 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         session.user.id = user.id;
         session.user.role = user.role;
+        session.user.isActive = user.isActive;
+        session.user.isBanned = user.isBanned;
+        // console.info("session", session, user);
         // <-- put other properties on the session here
       }
       return session;

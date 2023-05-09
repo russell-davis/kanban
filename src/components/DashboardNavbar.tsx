@@ -83,9 +83,7 @@ export const DashboardNavbar = () => {
               </Menu.Item>
             </Menu.Dropdown>
           </Menu>
-          <Text>
-            Hi, {session.data?.user?.name} - {session.data?.user.role}
-          </Text>
+          <Text>Hi, {session.data?.user?.name}</Text>
         </Group>
         <Group position="apart">
           <ActionIcon

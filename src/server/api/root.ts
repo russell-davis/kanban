@@ -474,6 +474,7 @@ export const appRouter = createTRPCRouter({
       .input(
         z.object({
           userId: z.string(),
+          isBanned: z.boolean(),
         })
       )
       .mutation(async ({ input, ctx }) => {
@@ -482,7 +483,7 @@ export const appRouter = createTRPCRouter({
             id: input.userId,
           },
           data: {
-            isBanned: true,
+            isBanned: input.isBanned,
           },
         });
       }),

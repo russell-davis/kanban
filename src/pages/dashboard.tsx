@@ -41,7 +41,16 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     return {
       redirect: {
         destination: "/login",
-        permanent: false,
+        permanent: true,
+      },
+    };
+  }
+
+  if (session.user.isBanned) {
+    return {
+      redirect: {
+        destination: "/404",
+        permanent: true,
       },
     };
   }

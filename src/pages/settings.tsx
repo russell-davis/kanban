@@ -1,13 +1,40 @@
-import { NextPage } from "next";
+import { GetServerSideProps, NextPage } from "next";
 import { AppShell, Footer, Header, Navbar, NavLink, Stack } from "@mantine/core";
 import { DashboardNavbar } from "~/components/DashboardNavbar";
 import { IconArrowLeft, IconHome2, IconSection } from "@tabler/icons-react";
 import { useRouter } from "next/router";
 import { ChannelSettings } from "~/components/settings/ChannelSettings";
+import { getServerAuthSession } from "~/server/auth";
 
 export const SETTINGS_APPS = {
   GENERAL: "general",
   CHANNELS: "channels",
+};
+
+export const getServerSideProps: GetServerSideProps = async (ctx) => {
+  const session = await getServerAuthSession(ctx);
+
+  if (!session || !session.user) {
+    return {
+      redirect: {
+        destination: "/login",
+        permanent: true,
+      },
+    };
+  }
+
+  if (session.user.isBanned) {
+    return {
+      redirect: {
+        destination: "/404",
+        permanent: true,
+      },
+    };
+  }
+
+  return {
+    props: { session },
+  };
 };
 
 const Settings: NextPage = () => {
