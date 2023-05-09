@@ -14,6 +14,7 @@ import { useRouter } from "next/router";
 import { signIn } from "next-auth/react";
 import { GetServerSideProps } from "next";
 import { getServerAuthSession } from "~/server/auth";
+import { api } from "~/utils/api";
 
 const useStyles = createStyles((theme) => ({
   inner: {
@@ -95,6 +96,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 const Home = () => {
   const { classes } = useStyles();
   const router = useRouter();
+  const xt = api.eventTracker.useMutation();
 
   return (
     <div>
@@ -137,6 +139,12 @@ const Home = () => {
                 className={classes.control}
                 onClick={async () => {
                   // router.push("/login");
+                  xt.mutate({
+                    event: "login with discord",
+                    data: {
+                      location: "home",
+                    },
+                  });
                   await signIn("discord");
                 }}
                 leftIcon={<IconBrandDiscord />}
@@ -149,6 +157,12 @@ const Home = () => {
                 size="md"
                 className={classes.control}
                 onClick={() => {
+                  xt.mutate({
+                    event: "view source code",
+                    data: {
+                      location: "home",
+                    },
+                  });
                   router.push("https://github.com/russell-davis/kanban");
                 }}
               >

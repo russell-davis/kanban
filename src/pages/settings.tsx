@@ -1,10 +1,11 @@
 import { GetServerSideProps, NextPage } from "next";
-import { AppShell, Footer, Header, Navbar, NavLink, Stack } from "@mantine/core";
+import { AppShell, Footer, Header, Navbar, NavLink } from "@mantine/core";
 import { DashboardNavbar } from "~/components/DashboardNavbar";
 import { IconArrowLeft, IconHome2, IconSection } from "@tabler/icons-react";
 import { useRouter } from "next/router";
 import { ChannelSettings } from "~/components/settings/ChannelSettings";
 import { getServerAuthSession } from "~/server/auth";
+import { GeneralSettings } from "~/components/GeneralSettings";
 
 export const SETTINGS_APPS = {
   GENERAL: "general",
@@ -90,13 +91,7 @@ const Settings: NextPage = () => {
         </Footer>
       }
     >
-      {tab === SETTINGS_APPS.GENERAL && (
-        <div className="general">
-          <Stack>
-            <h1>General Settings</h1>
-          </Stack>
-        </div>
-      )}
+      {tab === SETTINGS_APPS.GENERAL && <GeneralSettings />}
       {tab === SETTINGS_APPS.CHANNELS && <ChannelSettings />}
     </AppShell>
   );

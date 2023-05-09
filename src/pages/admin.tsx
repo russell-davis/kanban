@@ -136,44 +136,52 @@ export const Users = () => {
                   <td>{user.id}</td>
                   <td>{user.name}</td>
                   <td>
-                    <Checkbox
-                      checked={user.isActive}
-                      onChange={(event) => {
-                        toggleUserActive.mutate({
-                          userId: user.id,
-                          isActive: !user.isActive,
-                        });
-                      }}
-                    />
-                    {toggleUserActive.isLoading && <Loader />}
+                    <Group>
+                      <Checkbox
+                        checked={user.isActive}
+                        onChange={(event) => {
+                          toggleUserActive.mutate({
+                            userId: user.id,
+                            isActive: !user.isActive,
+                          });
+                        }}
+                      />
+                      {toggleUserActive.isLoading && <Loader size={20} />}
+                    </Group>
                   </td>
                   <td>
-                    <Checkbox
-                      disabled={
-                        user.role === "ADMIN" &&
-                        currentUserIsAdmin &&
-                        user.id === session.data?.user?.id
-                      }
-                      checked={user.role === "ADMIN"}
-                      onChange={async (event) => {
-                        toggleUserAdmin.mutate({
-                          userId: user.id,
-                          isAdmin: user.role === "ADMIN",
-                        });
-                      }}
-                    />
+                    <Group>
+                      <Checkbox
+                        disabled={
+                          user.role === "ADMIN" &&
+                          currentUserIsAdmin &&
+                          user.id === session.data?.user?.id
+                        }
+                        checked={user.role === "ADMIN"}
+                        onChange={async (event) => {
+                          toggleUserAdmin.mutate({
+                            userId: user.id,
+                            isAdmin: user.role === "ADMIN",
+                          });
+                        }}
+                      />
+                      {toggleUserAdmin.isLoading && <Loader size={20} />}
+                    </Group>
                   </td>
                   <td>
-                    <Checkbox
-                      disabled={toggleUserBanned.isLoading}
-                      checked={user.isBanned}
-                      onChange={async (event) => {
-                        toggleUserBanned.mutate({
-                          userId: user.id,
-                          isBanned: !user.isBanned,
-                        });
-                      }}
-                    />
+                    <Group>
+                      <Checkbox
+                        disabled={toggleUserBanned.isLoading}
+                        checked={user.isBanned}
+                        onChange={async (event) => {
+                          toggleUserBanned.mutate({
+                            userId: user.id,
+                            isBanned: !user.isBanned,
+                          });
+                        }}
+                      />
+                      {toggleUserBanned.isLoading && <Loader size={20} />}
+                    </Group>
                   </td>
                   <td>
                     <Group>

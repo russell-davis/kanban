@@ -1,4 +1,9 @@
-import { adminProcedure, createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
+import {
+  adminProcedure,
+  createTRPCRouter,
+  protectedProcedure,
+  publicProcedure,
+} from "~/server/api/trpc";
 import { z } from "zod";
 import { isSameDay } from "date-fns";
 import { RouterOutputs } from "~/utils/api";
@@ -410,6 +415,13 @@ export const appRouter = createTRPCRouter({
       }),
   }),
   users: createTRPCRouter({
+    me: protectedProcedure.query(async ({ input, ctx }) => {
+      return ctx.prisma.user.findUnique({
+        where: {
+          id: ctx.session.user.id,
+        },
+      });
+    }),
     list: adminProcedure
       .input(
         z.object({
@@ -457,6 +469,22 @@ export const appRouter = createTRPCRouter({
           },
         });
       }),
+    toggleEncryptData: protectedProcedure
+      .input(
+        z.object({
+          encryptData: z.boolean(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        return ctx.prisma.user.update({
+          where: {
+            id: ctx.session.user.id,
+          },
+          data: {
+            encryptData: input.encryptData,
+          },
+        });
+      }),
     delete: adminProcedure
       .input(
         z.object({
@@ -488,6 +516,20 @@ export const appRouter = createTRPCRouter({
         });
       }),
   }),
+  eventTracker: publicProcedure
+    .input(
+      z.object({
+        event: z.string(),
+        data: z.any(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      console.info({
+        eventName: input.event,
+        data: input.data,
+        created: new Date(),
+      });
+    }),
 });
 
 // export type definition of API
