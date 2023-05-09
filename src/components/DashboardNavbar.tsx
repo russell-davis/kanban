@@ -45,6 +45,21 @@ export const DashboardNavbar = () => {
             </Menu.Target>
 
             <Menu.Dropdown>
+              {session.data?.user.role === "ADMIN" && (
+                <>
+                  <Menu.Label>Admin</Menu.Label>
+                  <Menu.Item
+                    // color="blue"
+                    icon={<IconSettings size={14} />}
+                    onClick={async () => {
+                      await router.push(`/admin?t=users`);
+                    }}
+                  >
+                    Users
+                  </Menu.Item>
+                </>
+              )}
+
               <Menu.Label>Account</Menu.Label>
               <Menu.Item
                 // color="blue"
@@ -68,7 +83,9 @@ export const DashboardNavbar = () => {
               </Menu.Item>
             </Menu.Dropdown>
           </Menu>
-          <Text>Hi, {session.data?.user?.name}</Text>
+          <Text>
+            Hi, {session.data?.user?.name} - {session.data?.user.role}
+          </Text>
         </Group>
         <Group position="apart">
           <ActionIcon

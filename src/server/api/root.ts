@@ -1,4 +1,4 @@
-import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
+import { adminProcedure, createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { z } from "zod";
 import { isSameDay } from "date-fns";
 import { RouterOutputs } from "~/utils/api";
@@ -405,6 +405,84 @@ export const appRouter = createTRPCRouter({
         return ctx.prisma.taskChannel.delete({
           where: {
             id: input.channelId,
+          },
+        });
+      }),
+  }),
+  users: createTRPCRouter({
+    list: adminProcedure
+      .input(
+        z.object({
+          search: z.string().optional(),
+          limit: z.number().optional(),
+          cursor: z.string().optional(),
+        })
+      )
+      .query(async ({ input, ctx }) => {
+        return ctx.prisma.user.findMany({}).then((users) => {
+          return users;
+        });
+      }),
+    toggleAdmin: adminProcedure
+      .input(
+        z.object({
+          userId: z.string(),
+          isAdmin: z.boolean(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        return ctx.prisma.user.update({
+          where: {
+            id: input.userId,
+          },
+          data: {
+            role: input.isAdmin ? "ADMIN" : "USER",
+          },
+        });
+      }),
+    toggleActive: adminProcedure
+      .input(
+        z.object({
+          userId: z.string(),
+          isActive: z.boolean(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        return ctx.prisma.user.update({
+          where: {
+            id: input.userId,
+          },
+          data: {
+            isActive: input.isActive,
+          },
+        });
+      }),
+    delete: adminProcedure
+      .input(
+        z.object({
+          userId: z.string(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        return ctx.prisma.user.delete({
+          where: {
+            id: input.userId,
+          },
+        });
+      }),
+    ban: adminProcedure
+      .input(
+        z.object({
+          userId: z.string(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        return ctx.prisma.user.update({
+          where: {
+            id: input.userId,
+          },
+          data: {
+            isBanned: true,
           },
         });
       }),

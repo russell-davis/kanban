@@ -103,6 +103,8 @@ model User {
   accounts      Account[]
   sessions      Session[]
 
+  isActive Boolean       @default(false)
+  isBanned Boolean       @default(false)
   role     UserRole      @default(USER)
   tasks    Task[]
   channels TaskChannel[]
