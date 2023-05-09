@@ -1,8 +1,16 @@
 import { GetServerSideProps, type NextPage } from "next";
 import Head from "next/head";
-import { addDays, endOfDay, isSameDay, setHours, startOfDay, subDays } from "date-fns";
+import {
+  addDays,
+  endOfDay,
+  isSameDay,
+  setHours,
+  setMinutes,
+  startOfDay,
+  subDays,
+} from "date-fns";
 import { api, type RouterOutputs } from "~/utils/api";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   closestCenter,
   DndContext,
@@ -19,7 +27,7 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { TaskData } from "~/server/api/root";
-import { useDebouncedValue } from "@mantine/hooks";
+import { useDebouncedState, useDebouncedValue } from "@mantine/hooks";
 import { Backlog } from "~/components/backlog";
 import { Agenda } from "~/components/agenda";
 import { KanbanBoard } from "~/components/KanbanBoard";
@@ -80,7 +88,10 @@ export const Dashboard: NextPage = () => {
   const [activeDragItem, setActiveDragItem] = useState<
     RouterOutputs["kanban"]["tasks"]["backlog"][number] | undefined
   >(undefined);
-  const [currentCalendarDate, setCurrentCalendarDate] = useState(new Date());
+  const [currentCalendarDate, setCurrentCalendarDate] = useDebouncedState(
+    new Date(),
+    250
+  );
   const [debouncedDate, setDebouncedDate] = useDebouncedValue(currentCalendarDate, 500);
   const [scrolledToInitialPosition, setScrolledToInitialPosition] = useState(false);
   const scrollToToday = () => setScrolledToInitialPosition(false);
@@ -107,31 +118,6 @@ export const Dashboard: NextPage = () => {
     // })
   );
 
-  useEffect(() => {
-    if (
-      !!tasksQuery.data &&
-      tasksQuery.data.tasksByDate.length > 0 &&
-      !scrolledToInitialPosition
-    ) {
-      // find today's column
-      const todayColumn = tasksQuery.data.tasksByDate.find((dt) =>
-        isSameDay(dt.date, new Date())
-      );
-      if (todayColumn) {
-        console.info("scrolling to today's column");
-        // scroll to today's column
-        const element = document.querySelector(".is_today_column");
-        if (element) {
-          element.scrollIntoView({
-            behavior: "smooth",
-            inline: "start",
-          });
-          setScrolledToInitialPosition(true);
-        }
-      }
-    }
-  }, [tasksQuery.data, scrolledToInitialPosition]);
-
   // useMemo to compute the tasks that do not have a default date (start of the day) for the current day
   const calendarTasks = useMemo(() => {
     if (!tasksQuery.data?.tasksByDate) {
@@ -148,15 +134,27 @@ export const Dashboard: NextPage = () => {
     });
     console.info(`scheduledTasks = ${scheduledTasks.length}`);
 
-    // create an ordered array of { hour, tasks } objects even if the hour has no tasks. this will be used to render the calendar
-    const hours = Array.from({ length: 24 }, (_, i) => i).map((hour) => {
-      const tasks = scheduledTasks.filter((t) => t.scheduledFor?.getHours() === hour);
-      return {
-        id: hour,
-        hour,
-        tasks,
-      };
-    });
+    // create an ordered array of { hour, tasks } objects even if the hour has no tasks. this will be used to render the calendar. there are 24 hours in a day * 15min intervals
+    const hours = [];
+    // for each hour in a day, push the hour, hour:15, hour:30, hour:45
+    for (let i = 0; i < 24 * 4; i++) {
+      const hour = Math.floor(i / 4);
+      const minute = (i % 4) * 15;
+      hours.push({
+        id: `${hour}:${minute == 0 ? "00" : minute}`,
+        hour: hour,
+        minute: minute,
+        // find the tasks that are scheduled for this hour
+        tasks: scheduledTasks.filter((t) => {
+          // return items that are between hour:minute and hour:minute+15 (exclusive)
+          return (
+            t.scheduledFor?.getHours() === hour &&
+            t.scheduledFor?.getMinutes() >= minute &&
+            t.scheduledFor?.getMinutes() < minute + 15
+          );
+        }),
+      });
+    }
 
     return hours;
   }, [tasksQuery.data?.tasksByDate, debouncedDate]);

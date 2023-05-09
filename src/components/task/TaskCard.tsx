@@ -152,38 +152,41 @@ export const TaskCard: FC<{
       {task.completed && <Overlay color="#000" opacity={0.5} />}
       <Stack spacing={2}>
         <Group position={"apart"}>
-          <Stack spacing={0}>
-            {task.scheduledFor ? (
-              <div className={"flex"}>
-                <span className=" inline-flex items-center rounded-md bg-gray-50 px-1 py-0.5 text-[6pt] font-bold text-gray-600 ring-1 ring-inset ring-gray-500/10">
-                  {task.scheduledFor && format(task.scheduledFor, "h:mm aaa")}
-                </span>
-              </div>
-            ) : null}
-            <Text
-              weight={600}
-              pr={totalTimeEntrySeconds > 0 ? 10 : 0}
-              onClick={(event) => {
-                handleCardDoubleClicked();
-              }}
-            >
-              {task.title}
-            </Text>
-          </Stack>
+          {task.scheduledFor ? (
+            <div className={"flex"}>
+              <span className=" inline-flex items-center rounded-md bg-gray-50 px-1 py-0.5 text-[6pt] font-bold text-gray-600 ring-1 ring-inset ring-gray-500/10">
+                {task.scheduledFor && format(task.scheduledFor, "h:mm aaa")}
+              </span>
+            </div>
+          ) : (
+            <div></div>
+          )}
+
           {totalTimeEntrySeconds > 0 ? (
-            <span className="absolute right-2 top-2 inline-flex items-center rounded-md bg-gray-50 px-1 py-0.5 text-[6pt] font-bold text-gray-600 ring-1 ring-inset ring-gray-500/10">
+            <span className="end inline-flex items-center rounded-md bg-gray-50 px-1 py-0.5 text-[6pt] font-bold text-gray-600 ring-1 ring-inset ring-gray-500/10">
               {actualTime} / {expectedTime}
             </span>
           ) : null}
         </Group>
-        {task.subtasks.length > 0 ? (
+        <Group position={"apart"}>
+          <Text
+            weight={600}
+            pr={totalTimeEntrySeconds > 0 ? 10 : 0}
+            onClick={(event) => {
+              handleCardDoubleClicked();
+            }}
+          >
+            {task.title}
+          </Text>
+        </Group>
+        {task.subtasks.length > 0 && (
           <Group align={"center"}>
             <ActionIcon title={"complete"}>
               <IconCircleCheck stroke={0.7} size={18} />
             </ActionIcon>
             <Text>subtasks</Text>
           </Group>
-        ) : null}
+        )}
         <Group position="apart" align={"center"}>
           <Group spacing={0}>
             <ActionIcon

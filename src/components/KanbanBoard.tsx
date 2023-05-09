@@ -25,6 +25,18 @@ export const KanbanBoard = (props: {
   } = props;
   const scrollableRef = useRef<any>(null);
   const [visibleColumns, setVisibleColumns] = useState<Date[]>([]);
+  const [visible, setVisible] = useState<Map<Date, boolean>>(new Map());
+
+  const setCurrent = (map: typeof visible) => {
+    // get the keys (dates) where the value is true
+    const showing = Array.from(map)
+      .filter((a) => a[1])
+      .map((b) => b[0]);
+
+    const minDate = min(showing) || currentCalendarDate;
+
+    setCurrentCalendarDate(minDate);
+  };
 
   return (
     <div
@@ -47,23 +59,18 @@ export const KanbanBoard = (props: {
             endAt,
           }}
           didBecomeVisible={() => {
-            if (visibleColumns.includes(dt.date)) {
-              return;
-            }
-            const newVisible = [...visibleColumns, dt.date];
-            setVisibleColumns(newVisible);
-            const minDate = min(newVisible);
-            if (minDate) {
-              setCurrentCalendarDate(minDate);
-            }
+            setVisible((prev) => {
+              prev.set(dt.date, true);
+              setCurrent(prev);
+              return prev;
+            });
           }}
           didBecomeInvisible={() => {
-            const newVisible = visibleColumns.filter((d) => !isSameDay(d, dt.date));
-            setVisibleColumns(newVisible);
-            const minDate = min(newVisible);
-            if (minDate) {
-              setCurrentCalendarDate(minDate);
-            }
+            setVisible((prev) => {
+              prev.set(dt.date, false);
+              setCurrent(prev);
+              return prev;
+            });
           }}
           onEditTaskClicked={(task) => {
             props.onEditTaskClicked(task);

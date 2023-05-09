@@ -96,7 +96,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 const Home = () => {
   const { classes } = useStyles();
   const router = useRouter();
-  const xt = api.eventTracker.useMutation();
+  const xt = api.eventTracker.track.useMutation();
 
   return (
     <div>

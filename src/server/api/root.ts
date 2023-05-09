@@ -516,20 +516,22 @@ export const appRouter = createTRPCRouter({
         });
       }),
   }),
-  eventTracker: publicProcedure
-    .input(
-      z.object({
-        event: z.string(),
-        data: z.any(),
-      })
-    )
-    .mutation(async ({ input, ctx }) => {
-      console.info({
-        eventName: input.event,
-        data: input.data,
-        created: new Date(),
-      });
-    }),
+  eventTracker: createTRPCRouter({
+    track: publicProcedure
+      .input(
+        z.object({
+          event: z.string(),
+          data: z.any(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        console.info({
+          eventName: input.event,
+          data: input.data,
+          created: new Date(),
+        });
+      }),
+  }),
 });
 
 // export type definition of API
