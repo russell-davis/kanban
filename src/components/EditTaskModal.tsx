@@ -27,6 +27,7 @@ export const EditTaskModal: FC<{
   onClose: () => void;
   task: TaskData | undefined;
 }> = ({ open, setOpen, onClose, task }) => {
+  const utils = api.useContext();
   const [fullScreen, setFullScreen] = useState(false);
   const taskQuery = api.task.find.useQuery({
     taskId: task ? task.id : "",
@@ -34,6 +35,7 @@ export const EditTaskModal: FC<{
 
   const deleteTask = api.task.delete.useMutation({
     onSettled: () => {
+      utils.kanban.tasks.refetch();
       onClose();
     },
   });
