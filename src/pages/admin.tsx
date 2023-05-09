@@ -138,6 +138,9 @@ export const Users = () => {
                   <td>
                     <Group>
                       <Checkbox
+                        description={
+                          "Determines if the user can log in, usually only set once for new users."
+                        }
                         checked={user.isActive}
                         onChange={(event) => {
                           toggleUserActive.mutate({
@@ -152,6 +155,7 @@ export const Users = () => {
                   <td>
                     <Group>
                       <Checkbox
+                        description={"Determines if the user can access the admin panel."}
                         disabled={
                           user.role === "ADMIN" &&
                           currentUserIsAdmin &&
@@ -171,6 +175,9 @@ export const Users = () => {
                   <td>
                     <Group>
                       <Checkbox
+                        description={
+                          "Determines if the user can log in. Fast way to prevent a user from logging in or performing actions"
+                        }
                         disabled={toggleUserBanned.isLoading}
                         checked={user.isBanned}
                         onChange={async (event) => {

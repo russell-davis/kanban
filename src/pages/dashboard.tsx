@@ -37,6 +37,7 @@ export const DRAGABLES = {
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const session = await getServerAuthSession(ctx);
 
+  // redirect to login if no session
   if (!session || !session.user) {
     return {
       redirect: {
@@ -45,11 +46,20 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       },
     };
   }
-
+  // redirect to 404 if banned
   if (session.user.isBanned) {
     return {
       redirect: {
         destination: "/404",
+        permanent: true,
+      },
+    };
+  }
+  // redirect to access-pending if not active
+  if (!session.user.isActive) {
+    return {
+      redirect: {
+        destination: "/access-pending",
         permanent: true,
       },
     };
