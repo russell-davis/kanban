@@ -1,4 +1,9 @@
-import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
+import {
+  adminProcedure,
+  createTRPCRouter,
+  protectedProcedure,
+  publicProcedure,
+} from "~/server/api/trpc";
 import { z } from "zod";
 import { isSameDay } from "date-fns";
 import { RouterOutputs } from "~/utils/api";
@@ -52,6 +57,7 @@ export const appRouter = createTRPCRouter({
               },
             },
             timeEntries: true,
+            channel: true,
           },
         });
         console.info("tasks", tasks.length);
@@ -81,22 +87,42 @@ export const appRouter = createTRPCRouter({
         })
       )
       .mutation(async ({ input, ctx }) => {
-        if (!ctx.session) {
-          throw new Error("not logged in");
-        }
-
         const maxTaskPosition = await ctx.prisma.task.findFirst({
           orderBy: {
             position: "desc",
           },
         });
+        // find the default channel for the user
+        const taskChannel = await ctx.prisma.taskChannel
+          .findFirst({
+            where: {
+              userId: ctx.session.user.id,
+              isDefault: true,
+            },
+          })
+          .then(async (c) => {
+            if (!c) {
+              return await ctx.prisma.taskChannel.create({
+                data: {
+                  name: "work",
+                  userId: ctx.session.user.id,
+                  isDefault: true,
+                  color: "#52ffec",
+                },
+              });
+            }
+            return c;
+          });
+
+        const userId = ctx.session.user.id;
         const task = await ctx.prisma.task.create({
           data: {
-            userId: ctx.session.user.id,
+            userId: userId,
             title: input.title,
             date: input.date,
             position: maxTaskPosition ? maxTaskPosition.position + 1 : 0,
             backlog: true,
+            channelId: taskChannel.id,
           },
         });
         console.info("created task", task);
@@ -161,6 +187,99 @@ export const appRouter = createTRPCRouter({
           },
         });
       }),
+    find: protectedProcedure
+      .input(
+        z.object({
+          taskId: z.string(),
+        })
+      )
+      .query(async ({ input, ctx }) => {
+        return ctx.prisma.task.findUnique({
+          where: {
+            id: input.taskId,
+          },
+          include: {
+            subtasks: {
+              orderBy: {
+                id: "asc",
+              },
+            },
+            timeEntries: true,
+            channel: true,
+          },
+        });
+      }),
+    update: protectedProcedure
+      .input(
+        z.object({
+          taskId: z.string(),
+          title: z.string().optional(),
+          notes: z.string().optional(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        const updated = await ctx.prisma.task.update({
+          where: {
+            id: input.taskId,
+          },
+          data: {
+            title: input.title,
+            notes: input.notes,
+          },
+        });
+
+        return updated;
+      }),
+    changeChannel: protectedProcedure
+      .input(
+        z.object({
+          taskId: z.string(),
+          channelId: z.string(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        const defaultChannels = await ctx.prisma.taskChannel.findMany({
+          where: {
+            AND: [{ userId: ctx.session.user.id }, { isDefault: true }],
+          },
+        });
+
+        // if any channels are default, set them to false
+        if (defaultChannels.length > 0) {
+          await ctx.prisma.taskChannel.updateMany({
+            where: {
+              id: {
+                in: defaultChannels.map((c) => c.id),
+              },
+            },
+            data: {
+              isDefault: false,
+            },
+          });
+        }
+
+        // set the new channel to default
+        await ctx.prisma.taskChannel.update({
+          where: {
+            id: input.channelId,
+          },
+          data: {
+            isDefault: true,
+          },
+        });
+
+        // update the task
+        const updated = await ctx.prisma.task.update({
+          where: {
+            id: input.taskId,
+          },
+          data: {
+            channelId: input.channelId,
+          },
+        });
+
+        return updated;
+      }),
     delete: protectedProcedure
       .input(
         z.object({
@@ -182,6 +301,235 @@ export const appRouter = createTRPCRouter({
             console.error("error deleting task", e);
             throw e;
           });
+      }),
+  }),
+  channels: createTRPCRouter({
+    list: protectedProcedure.query(async ({ input, ctx }) => {
+      return ctx.prisma.taskChannel.findMany({
+        where: {
+          userId: ctx.session.user.id,
+        },
+        orderBy: [
+          // { isDefault: "desc" },
+          { name: "asc" },
+        ],
+      });
+    }),
+    create: protectedProcedure
+      .input(
+        z.object({
+          name: z.string(),
+          color: z.string(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        return ctx.prisma.taskChannel.create({
+          data: {
+            userId: ctx.session.user.id,
+            name: input.name,
+            color: input.color,
+          },
+        });
+      }),
+    createAndConnect: protectedProcedure
+      .input(
+        z.object({
+          taskId: z.string(),
+          name: z.string(),
+          color: z.string(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        return ctx.prisma.taskChannel.create({
+          data: {
+            name: input.name,
+            color: input.color,
+            userId: ctx.session.user.id,
+            tasks: {
+              connect: {
+                id: input.taskId,
+              },
+            },
+          },
+        });
+      }),
+    setDefault: protectedProcedure
+      .input(
+        z.object({
+          newChannelId: z.string(),
+          oldChannelId: z.string(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        return ctx.prisma.taskChannel
+          .updateMany({
+            where: {
+              userId: ctx.session.user.id,
+            },
+            data: {
+              isDefault: false,
+            },
+          })
+          .then(() => {
+            return ctx.prisma.taskChannel.update({
+              where: {
+                id: input.newChannelId,
+              },
+              data: {
+                isDefault: true,
+              },
+            });
+          });
+      }),
+    update: protectedProcedure
+      .input(
+        z.object({
+          channelId: z.string(),
+          name: z.string(),
+          color: z.string(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        return ctx.prisma.taskChannel.update({
+          where: {
+            id: input.channelId,
+          },
+          data: {
+            name: input.name,
+            color: input.color,
+          },
+        });
+      }),
+    delete: protectedProcedure
+      .input(
+        z.object({
+          channelId: z.string(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        return ctx.prisma.taskChannel.delete({
+          where: {
+            id: input.channelId,
+          },
+        });
+      }),
+  }),
+  users: createTRPCRouter({
+    me: protectedProcedure.query(async ({ input, ctx }) => {
+      return ctx.prisma.user.findUnique({
+        where: {
+          id: ctx.session.user.id,
+        },
+      });
+    }),
+    list: adminProcedure
+      .input(
+        z.object({
+          search: z.string().optional(),
+          limit: z.number().optional(),
+          cursor: z.string().optional(),
+        })
+      )
+      .query(async ({ input, ctx }) => {
+        return ctx.prisma.user.findMany({}).then((users) => {
+          return users;
+        });
+      }),
+    toggleAdmin: adminProcedure
+      .input(
+        z.object({
+          userId: z.string(),
+          isAdmin: z.boolean(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        return ctx.prisma.user.update({
+          where: {
+            id: input.userId,
+          },
+          data: {
+            role: input.isAdmin ? "ADMIN" : "USER",
+          },
+        });
+      }),
+    toggleActive: adminProcedure
+      .input(
+        z.object({
+          userId: z.string(),
+          isActive: z.boolean(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        return ctx.prisma.user.update({
+          where: {
+            id: input.userId,
+          },
+          data: {
+            isActive: input.isActive,
+          },
+        });
+      }),
+    toggleEncryptData: protectedProcedure
+      .input(
+        z.object({
+          encryptData: z.boolean(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        return ctx.prisma.user.update({
+          where: {
+            id: ctx.session.user.id,
+          },
+          data: {
+            encryptData: input.encryptData,
+          },
+        });
+      }),
+    delete: adminProcedure
+      .input(
+        z.object({
+          userId: z.string(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        return ctx.prisma.user.delete({
+          where: {
+            id: input.userId,
+          },
+        });
+      }),
+    ban: adminProcedure
+      .input(
+        z.object({
+          userId: z.string(),
+          isBanned: z.boolean(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        return ctx.prisma.user.update({
+          where: {
+            id: input.userId,
+          },
+          data: {
+            isBanned: input.isBanned,
+          },
+        });
+      }),
+  }),
+  eventTracker: createTRPCRouter({
+    track: publicProcedure
+      .input(
+        z.object({
+          event: z.string(),
+          data: z.any(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        console.info({
+          eventName: input.event,
+          data: input.data,
+          created: new Date(),
+        });
       }),
   }),
 });

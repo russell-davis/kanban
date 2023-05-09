@@ -27,6 +27,9 @@ model Task {
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
   timeEntries  TaskTimeEntry[]
+  channelId    String
+  channel      TaskChannel     @relation(fields: [channelId], references: [id])
+  notes        String          @default("")
 
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -48,6 +51,24 @@ model TaskTimeEntry {
   task Task @relation(fields: [taskId], references: [id])
 }
 
+model TaskChannel {
+  id        String  @id @default(cuid())
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isDefault Boolean @default(false)
+  name      String  @unique @default("work")
+  color     String
+  tasks     Task[]
+}
+
+model Metrics {
+  id        String   @id @default(cuid())
+  event     String
+  createdAt DateTime @default(now())
+  location  String
+  userId    String?
+}
+
 // UserRole enum
 enum UserRole {
   ADMIN
@@ -55,6 +76,22 @@ enum UserRole {
 }
 
 // Necessary for Next auth
+model User {
+  id            String        @id @default(cuid())
+  name          String?
+  email         String?       @unique
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+  isActive      Boolean       @default(false)
+  isBanned      Boolean       @default(false)
+  encryptData   Boolean       @default(false)
+  role          UserRole      @default(USER)
+  tasks         Task[]
+  channels      TaskChannel[]
+}
+
 model Account {
   id                String  @id @default(cuid())
   userId            String
@@ -79,19 +116,6 @@ model Session {
   userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime?
-  image         String?
-  accounts      Account[]
-  sessions      Session[]
-
-  role UserRole @default(USER)
-  Task Task[]
 }
 
 model VerificationToken {

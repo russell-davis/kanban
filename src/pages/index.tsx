@@ -9,8 +9,12 @@ import {
   ThemeIcon,
   Title,
 } from "@mantine/core";
-import { IconCheck } from "@tabler/icons-react";
+import { IconBrandDiscord, IconCheck } from "@tabler/icons-react";
 import { useRouter } from "next/router";
+import { signIn } from "next-auth/react";
+import { GetServerSideProps } from "next";
+import { getServerAuthSession } from "~/server/auth";
+import { api } from "~/utils/api";
 
 const useStyles = createStyles((theme) => ({
   inner: {
@@ -65,9 +69,34 @@ const useStyles = createStyles((theme) => ({
   },
 }));
 
+export const getServerSideProps: GetServerSideProps = async (ctx) => {
+  const session = await getServerAuthSession(ctx);
+
+  if (!!session) {
+    if (session.user.isBanned) {
+      return {
+        redirect: {
+          destination: "/404",
+          permanent: true,
+        },
+      };
+    }
+    return {
+      redirect: {
+        destination: "/dashboard",
+        permanent: true,
+      },
+    };
+  }
+
+  return {
+    props: { session },
+  };
+};
 const Home = () => {
   const { classes } = useStyles();
   const router = useRouter();
+  const xt = api.eventTracker.track.useMutation();
 
   return (
     <div>
@@ -108,11 +137,19 @@ const Home = () => {
                 radius="xl"
                 size="md"
                 className={classes.control}
-                onClick={() => {
-                  router.push("/login");
+                onClick={async () => {
+                  // router.push("/login");
+                  xt.mutate({
+                    event: "login with discord",
+                    data: {
+                      location: "home",
+                    },
+                  });
+                  await signIn("discord");
                 }}
+                leftIcon={<IconBrandDiscord />}
               >
-                Get started
+                Get started with Discord
               </Button>
               <Button
                 variant="default"
@@ -120,6 +157,12 @@ const Home = () => {
                 size="md"
                 className={classes.control}
                 onClick={() => {
+                  xt.mutate({
+                    event: "view source code",
+                    data: {
+                      location: "home",
+                    },
+                  });
                   router.push("https://github.com/russell-davis/kanban");
                 }}
               >
