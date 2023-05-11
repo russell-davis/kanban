@@ -5,6 +5,7 @@ on:
 
 env:
   NODE_VERSION: '18.x'
+  DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
 jobs:
   build:
