@@ -188,11 +188,7 @@ export const appRouter = createTRPCRouter({
         });
       }),
     find: protectedProcedure
-      .input(
-        z.object({
-          taskId: z.string(),
-        })
-      )
+      .input(z.object({ taskId: z.string() }))
       .query(async ({ input, ctx }) => {
         return ctx.prisma.task.findUnique({
           where: {

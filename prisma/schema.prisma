@@ -56,7 +56,7 @@ model TaskChannel {
   userId    String
   user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   isDefault Boolean @default(false)
-  name      String  @unique @default("work")
+  name      String
   color     String
   tasks     Task[]
 }
