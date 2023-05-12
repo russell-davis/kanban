@@ -8,6 +8,11 @@ env:
   DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
 jobs:
+  test:
+    - name: test env
+      run: |
+          echo "DATABASE_URL=${{ env.DATABASE_URL }}"
+          echo "NODE_VERSION=${{ env.NODE_VERSION }}"
   build:
     runs-on: ubuntu-latest
     steps:
@@ -21,5 +26,6 @@ jobs:
 
     - name: yarn prisma generate, push
       run: |
+        echo "DATABASE_URL=${{ env.DATABASE_URL }}"
         yarn
         yarn prisma migrate deploy
