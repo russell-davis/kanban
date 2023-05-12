@@ -20,6 +20,7 @@ jobs:
         cache: 'yarn'
 
     - name: yarn prisma generate, push
+      environment: production
       run: |
         echo "DATABASE_URL=${{ secrets.DATABASE_URL }}"
         yarn
