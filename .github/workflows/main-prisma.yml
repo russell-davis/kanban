@@ -17,8 +17,9 @@ jobs:
         echo "vars DATABASE_URL=${{ vars.DATABASE_URL }}"
         echo "sec DATABASE_URL=${{ secrets.DATABASE_URL }}"
         echo "NODE_VERSION=${{ env.NODE_VERSION }}"
-        echo printenv
-        echo env
+        printenv
+        env
+        
 
 #  build:
 #    runs-on: ubuntu-latest
