@@ -13,21 +13,22 @@ jobs:
     steps:
     - name: testenv
       run: |
+          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}"
           echo "DATABASE_URL=${{ env.DATABASE_URL }}"
           echo "NODE_VERSION=${{ env.NODE_VERSION }}"
-  build:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'yarn'
-
-    - name: yarn prisma generate, push
-      run: |
-        echo "DATABASE_URL=${{ env.DATABASE_URL }}"
-        yarn
-        yarn prisma migrate deploy
+#  build:
+#    runs-on: ubuntu-latest
+#    steps:
+#    - uses: actions/checkout@v3
+#
+#    - name: Set up Node.js
+#      uses: actions/setup-node@v3
+#      with:
+#        node-version: ${{ env.NODE_VERSION }}
+#        cache: 'yarn'
+#
+#    - name: yarn prisma generate, push
+#      run: |
+#        echo "DATABASE_URL=${{ env.DATABASE_URL }}"
+#        yarn
+#        yarn prisma migrate deploy
