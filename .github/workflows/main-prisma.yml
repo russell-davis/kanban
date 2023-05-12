@@ -9,6 +9,8 @@ env:
 
 jobs:
   test:
+    runs-on: ubuntu-latest
+    steps:
     - name: testenv
       run: |
           echo "DATABASE_URL=${{ env.DATABASE_URL }}"
