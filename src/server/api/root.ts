@@ -6,7 +6,7 @@ import {
 } from "~/server/api/trpc";
 import { z } from "zod";
 import { isSameDay } from "date-fns";
-import { RouterOutputs } from "~/utils/api";
+import { type RouterOutputs } from "~/utils/api";
 
 /**
  * This is the primary router for your server.
@@ -79,6 +79,31 @@ export const appRouter = createTRPCRouter({
             ),
         };
       }),
+    updatePosition: protectedProcedure
+      .input(
+        z.object({
+          taskId: z.string(),
+          date: z.date(),
+          position: z.number(),
+          backlog: z.boolean().default(false),
+          scheduledFor: z.date().nullable(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        return ctx.prisma.task.update({
+          where: {
+            id: input.taskId,
+          },
+          data: {
+            date: input.date,
+            position: input.position,
+            backlog: input.backlog,
+            scheduledFor: input.scheduledFor,
+          },
+        });
+      }),
+  }),
+  task: createTRPCRouter({
     create: protectedProcedure
       .input(
         z.object({
@@ -129,64 +154,6 @@ export const appRouter = createTRPCRouter({
 
         return task;
       }),
-    updatePosition: protectedProcedure
-      .input(
-        z.object({
-          taskId: z.string(),
-          date: z.date(),
-          position: z.number(),
-          backlog: z.boolean().default(false),
-          scheduledFor: z.date().nullable(),
-        })
-      )
-      .mutation(async ({ input, ctx }) => {
-        return ctx.prisma.task.update({
-          where: {
-            id: input.taskId,
-          },
-          data: {
-            date: input.date,
-            position: input.position,
-            backlog: input.backlog,
-            scheduledFor: input.scheduledFor,
-          },
-        });
-      }),
-  }),
-  task: createTRPCRouter({
-    logTime: protectedProcedure
-      .input(
-        z.object({
-          taskId: z.string(),
-          time: z.number(),
-        })
-      )
-      .mutation(async ({ input, ctx }) => {
-        return ctx.prisma.task.update({
-          where: {
-            id: input.taskId,
-          },
-          data: {
-            timeEntries: {
-              create: {
-                seconds: input.time,
-              },
-            },
-          },
-        });
-      }),
-    toggleCompleted: protectedProcedure
-      .input(z.object({ taskId: z.string(), completed: z.boolean() }))
-      .mutation(async ({ input, ctx }) => {
-        return ctx.prisma.task.update({
-          where: {
-            id: input.taskId,
-          },
-          data: {
-            completed: input.completed,
-          },
-        });
-      }),
     find: protectedProcedure
       .input(z.object({ taskId: z.string() }))
       .query(async ({ input, ctx }) => {
@@ -225,6 +192,61 @@ export const appRouter = createTRPCRouter({
         });
 
         return updated;
+      }),
+    delete: protectedProcedure
+      .input(
+        z.object({
+          taskId: z.string(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        return ctx.prisma.task
+          .delete({
+            where: {
+              id: input.taskId,
+            },
+          })
+          .then((t) => {
+            console.info("deleted task", t);
+            return t;
+          })
+          .catch((e) => {
+            console.error("error deleting task", e);
+            throw e;
+          });
+      }),
+    logTime: protectedProcedure
+      .input(
+        z.object({
+          taskId: z.string(),
+          time: z.number(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        return ctx.prisma.task.update({
+          where: {
+            id: input.taskId,
+          },
+          data: {
+            timeEntries: {
+              create: {
+                seconds: input.time,
+              },
+            },
+          },
+        });
+      }),
+    toggleCompleted: protectedProcedure
+      .input(z.object({ taskId: z.string(), completed: z.boolean() }))
+      .mutation(async ({ input, ctx }) => {
+        return ctx.prisma.task.update({
+          where: {
+            id: input.taskId,
+          },
+          data: {
+            completed: input.completed,
+          },
+        });
       }),
     changeChannel: protectedProcedure
       .input(
@@ -275,28 +297,6 @@ export const appRouter = createTRPCRouter({
         });
 
         return updated;
-      }),
-    delete: protectedProcedure
-      .input(
-        z.object({
-          taskId: z.string(),
-        })
-      )
-      .mutation(async ({ input, ctx }) => {
-        return ctx.prisma.task
-          .delete({
-            where: {
-              id: input.taskId,
-            },
-          })
-          .then((t) => {
-            console.info("deleted task", t);
-            return t;
-          })
-          .catch((e) => {
-            console.error("error deleting task", e);
-            throw e;
-          });
       }),
   }),
   channels: createTRPCRouter({

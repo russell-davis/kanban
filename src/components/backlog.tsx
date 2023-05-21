@@ -20,7 +20,7 @@ export const Backlog = (props: {
 
   // network
   const utils = api.useContext();
-  const createTaskMutation = api.kanban.create.useMutation();
+  const createTaskMutation = api.task.create.useMutation();
 
   const orderedTasks =
     props.tasksQueryData?.backlog === undefined

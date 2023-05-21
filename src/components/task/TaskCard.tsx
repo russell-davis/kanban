@@ -1,12 +1,12 @@
 import React, { FC, useState } from "react";
-import { ActionIcon, Card, Group, Overlay, Stack, Text } from "@mantine/core";
+import { ActionIcon, Card, Group, Indicator, Overlay, Stack, Text } from "@mantine/core";
 import { classNames } from "~/lib/classNames";
 import { IconCalendar, IconCircleCheck, IconClock } from "@tabler/icons-react";
 import { Timer } from "~/components/task/Timer";
 import { DatePicker } from "@mantine/dates";
 import { api } from "~/utils/api";
 import { TaskData } from "~/server/api/root";
-import { format, intervalToDuration, isSameDay } from "date-fns";
+import { format, intervalToDuration, isSameDay, isToday } from "date-fns";
 import { getHoursMinutes } from "~/lib/GetHoursMinutes";
 import { ChannelSelector } from "~/components/task/ChannelSelector";
 
@@ -252,7 +252,6 @@ export const TaskCard: FC<{
             <DatePicker
               value={datePickerDate}
               onChange={(date) => {
-                console.info(date);
                 setDatePickerDate(date);
                 if (!date) return;
                 moveTaskItem.mutate({
@@ -262,6 +261,18 @@ export const TaskCard: FC<{
                   backlog: false,
                   scheduledFor: null,
                 });
+              }}
+              firstDayOfWeek={0}
+              renderDay={(date) => {
+                const day = date.getDate();
+                if (isToday(date)) {
+                  return (
+                    <Indicator size={6} color="red" offset={-5}>
+                      <div>{day}</div>
+                    </Indicator>
+                  );
+                }
+                return <div>{day}</div>;
               }}
             />
           </div>

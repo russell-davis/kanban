@@ -1,4 +1,4 @@
-import { GetServerSideProps, type NextPage } from "next";
+import { type GetServerSideProps, type NextPage } from "next";
 import Head from "next/head";
 import { addDays, endOfDay, isSameDay, setHours, startOfDay, subDays } from "date-fns";
 import { api, type RouterOutputs } from "~/utils/api";
@@ -18,7 +18,7 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import { TaskData } from "~/server/api/root";
+import { type TaskData } from "~/server/api/root";
 import { useDebouncedState, useDebouncedValue } from "@mantine/hooks";
 import { Backlog } from "~/components/backlog";
 import { Agenda } from "~/components/agenda";
