@@ -26,6 +26,7 @@ import { KanbanBoard } from "~/components/KanbanBoard";
 import { getServerAuthSession } from "~/server/auth";
 import { DashboardNavbar } from "~/components/DashboardNavbar";
 import { EditTaskModal } from "~/components/EditTaskModal";
+import { notifications } from "@mantine/notifications";
 
 export const DRAGABLES = {
   CALENDAR: "calendar",
@@ -89,7 +90,27 @@ export const Dashboard: NextPage = () => {
   const scrollToToday = () => setScrolledToInitialPosition(false);
 
   const utils = api.useContext();
-  const updatePositionMutation = api.kanban.updatePosition.useMutation();
+  const updatePositionMutation = api.kanban.updatePosition.useMutation({
+    onError: (error) => {
+      notifications.show({
+        title: "Error",
+        message: error.message,
+        color: "red",
+      });
+    },
+    onSuccess: (data, variables) => {
+      notifications.show({
+        title: "Success",
+        color: "green",
+        message: `Task moved to ${
+          variables.backlog ? "backlog" : variables.date.toLocaleDateString()
+        }`,
+      });
+    },
+    onSettled: async () => {
+      await tasksQuery.refetch();
+    },
+  });
   const tasksQuery = api.kanban.tasks.useQuery(
     {
       startAt: startAt,

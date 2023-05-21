@@ -150,7 +150,6 @@ export const appRouter = createTRPCRouter({
             channelId: taskChannel.id,
           },
         });
-        console.info("created task", task);
 
         return task;
       }),

@@ -16,6 +16,14 @@ export const useCreateTaskMutation = (props: {
       await utils.kanban.tasks.cancel();
       // Snapshot the previous value
       const previous = utils.kanban.tasks.getData(props.dateRange);
+      // get the max position value (previous orderby position desc)
+      const maxPosition =
+        previous?.backlog.reduce((acc, curr) => {
+          if (acc < curr.position) {
+            return curr.position;
+          }
+          return acc;
+        }, 0) || 1;
       // Optimistically update to the new value
       utils.kanban.tasks.setData(props.dateRange, (td) => {
         if (!td) return td;
@@ -29,7 +37,7 @@ export const useCreateTaskMutation = (props: {
               backlog: true,
               completed: false,
               title: title,
-              position: 0,
+              position: maxPosition + 1,
               createdAt: startOfDay(new Date()),
               updatedAt: startOfDay(new Date()),
               notes: "",
