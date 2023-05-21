@@ -8,6 +8,7 @@ import "~/styles/globals.css";
 import { ColorScheme, ColorSchemeProvider, MantineProvider } from "@mantine/core";
 import { ModalsProvider } from "@mantine/modals";
 import { useState } from "react";
+import { Notifications } from "@mantine/notifications";
 
 const MyApp: AppType<{ session: Session | null }> = ({
   Component,
@@ -24,6 +25,7 @@ const MyApp: AppType<{ session: Session | null }> = ({
       >
         <MantineProvider theme={{ colorScheme }} withGlobalStyles withNormalizeCSS>
           <ModalsProvider>
+            <Notifications />
             <Component {...pageProps} />
           </ModalsProvider>
         </MantineProvider>
