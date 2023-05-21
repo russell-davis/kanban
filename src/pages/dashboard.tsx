@@ -126,9 +126,6 @@ export const Dashboard: NextPage = () => {
       },
     }),
     useSensor(TouchSensor)
-    // useSensor(KeyboardSensor, {
-    //   coordinateGetter,
-    // })
   );
 
   // useMemo to compute the tasks that do not have a default date (start of the day) for the current day
@@ -387,20 +384,13 @@ export const Dashboard: NextPage = () => {
     );
   }
   async function moveToBacklog(task: TaskData) {
-    await updatePositionMutation.mutateAsync(
-      {
-        taskId: task.id,
-        date: new Date(0),
-        backlog: true,
-        position: 1,
-        scheduledFor: null,
-      },
-      {
-        onSuccess: async () => {
-          await tasksQuery.refetch();
-        },
-      }
-    );
+    await updatePositionMutation.mutateAsync({
+      taskId: task.id,
+      date: new Date(0),
+      backlog: true,
+      position: 1,
+      scheduledFor: null,
+    });
   }
   async function moveToDay(task: TaskData, date: Date, position: number) {
     // if the task is being moved from to a different day, we need to update the position and reset the scheduledFor
@@ -411,37 +401,23 @@ export const Dashboard: NextPage = () => {
       task.scheduledFor !== null &&
       task.scheduledFor.getHours() !== 0;
     const scheduledFor = movingToDifferentDay ? null : task.scheduledFor;
-    await updatePositionMutation
-      .mutateAsync({
-        taskId: task.id,
-        date: date,
-        backlog: false,
-        position: position,
-        scheduledFor: scheduledFor,
-      })
-      .then(async () => {
-        return await tasksQuery.refetch();
-      })
-      .catch((e) => {
-        console.error(e);
-      });
+    updatePositionMutation.mutate({
+      taskId: task.id,
+      date: date,
+      backlog: false,
+      position: position,
+      scheduledFor: scheduledFor,
+    });
   }
   async function moveToHour(task: TaskData, hour: number, currentCalendarDate: Date) {
     const newDate = setHours(currentCalendarDate, hour);
-    await updatePositionMutation.mutateAsync(
-      {
-        taskId: task.id,
-        date: startOfDay(currentCalendarDate),
-        scheduledFor: newDate,
-        backlog: false,
-        position: task.position,
-      },
-      {
-        onSuccess: async () => {
-          await tasksQuery.refetch();
-        },
-      }
-    );
+    updatePositionMutation.mutate({
+      taskId: task.id,
+      date: startOfDay(currentCalendarDate),
+      scheduledFor: newDate,
+      backlog: false,
+      position: task.position,
+    });
   }
   function onDragStart(event: DragStartEvent) {
     console.info("start");
